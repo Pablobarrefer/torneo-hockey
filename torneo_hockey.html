@@ -1,0 +1,351 @@
+    
+<!DOCTYPE html>
+<html lang="gl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>🏑 Torneo de Nadal de Hóckey CEIP Balaídos — Consulta</title>
+<style>
+  /* Prevent horizontal scroll */
+  html,body { margin:0; padding:0; width:100%; overflow-x:hidden; font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial; background: linear-gradient(180deg,#f0f9ff,#fff); color:#0f172a; }
+
+  :root{
+    --accent:#0056b3;
+    --accent-2:#00a8ff;
+    --muted:#6b7280;
+    --card:#ffffff;
+    --gold:#ffc107;
+    --success:#28a745;
+    --danger:#dc3545;
+    --glass: rgba(255,255,255,0.8);
+  }
+
+  .wrap{ max-width:1200px; margin:24px auto; padding:18px; box-sizing:border-box; }
+  .page{
+    background:var(--card);
+    border-radius:12px;
+    padding:18px;
+    box-shadow:0 8px 30px rgba(6,10,15,0.06);
+    border:1px solid rgba(0,0,0,0.03);
+  }
+
+  header{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .title { display:flex; gap:12px; align-items:center }
+  h1{ margin:0; font-size:1.25rem; background:linear-gradient(90deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .subtitle{ margin:0; font-size:0.9rem; color:var(--muted) }
+
+  .controls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+  .year-input{ padding:8px 10px; border-radius:8px; border:1px solid #e6eef8; min-width:150px; background:linear-gradient(180deg,#fff,#fbfeff) }
+  button{ font-family:inherit; cursor:pointer; border-radius:8px; border:none; padding:8px 10px; background:var(--accent); color:white; box-shadow:0 6px 12px rgba(0,86,179,0.12) }
+  button.gray{ background:#6b7280 }
+  button.warn{ background:var(--gold); color:#111 }
+  button.danger{ background:var(--danger) }
+
+  .main-grid{ display:grid; grid-template-columns: 1fr 360px; gap:16px; margin-top:16px; align-items:start; }
+  @media (max-width:1100px){ .main-grid{ grid-template-columns: 1fr; } .aside { order:2 } }
+
+  .card{ background:linear-gradient(180deg,#fff,#fbfdff); padding:14px; border-radius:10px; box-shadow:0 6px 18px rgba(2,6,23,0.03); border:1px solid rgba(3,105,161,0.04) }
+
+  .groups-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; }
+
+  .group-card{ padding:10px; border-radius:10px; background:linear-gradient(180deg,#fff,#f8fbff); border:1px solid rgba(0,86,179,0.06) }
+  .group-card h3{ margin:0 0 8px 0; color:var(--accent); font-size:1rem }
+  .teams-list{ display:flex; flex-direction:column; gap:6px; }
+  .teams-list input{ padding:8px; border-radius:8px; border:1px solid #e9f2ff; background:#fbfeff; width:100%; box-sizing:border-box }
+
+  .matches-container{ margin-top:10px; display:flex; flex-direction:column; gap:8px; max-height:280px; overflow:auto; padding-right:6px }
+  .round-header{ color: var(--accent); font-weight: bold; background-color: #f0f9ff; padding: 6px 8px; border-radius: 6px; margin-top: 10px; }
+  .resting-team{ font-style: italic; color: var(--muted); text-align: center; padding: 4px; }
+  .match{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px; border-radius:8px; background:linear-gradient(180deg,#f7fbff,#fff); border:1px solid rgba(0,100,180,0.04) }
+  .match .teams{ font-weight:600; flex-grow: 1; }
+  .match input[type="number"]{ width:40px; padding:6px; border-radius:8px; border:1px solid #e6f2ff; text-align:center }
+
+  table{ width:100%; border-collapse:collapse; font-size:0.92rem; margin-top:10px; }
+  th,td{ padding:8px; text-align:left; border-bottom:1px dashed #eef6ff }
+  th{ color:var(--accent) }
+  td.num{ text-align:center; width:40px }
+
+  .playoff-section{ margin-top:12px }
+  .playoff-match{ display:flex; justify-content:space-between; align-items:center; padding:8px; border-radius:8px; background:#fff9f0; border:1px solid rgba(0,0,0,0.03) }
+
+  footer{ margin-top:14px; text-align:center; color:var(--muted); font-size:0.9rem }
+  .banner{ position:fixed; right:18px; top:18px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; padding:10px 14px; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.12); display:none; z-index:9999 }
+  
+  /* --- NOVOS ESTILOS PARA O MODO CONSULTA --- */
+  .view-mode .admin-only { display: none !important; }
+  .view-mode input {
+    pointer-events: none;
+    background: #f8f9fa !important;
+    border-color: transparent !important;
+    color: var(--muted);
+  }
+  .view-mode .match input { color: #0f172a; } /* Manter cor dos resultados */
+  /* --- FIN DOS NOVOS ESTILOS --- */
+
+  @media print{ body { background: white; } .banner, button, .controls { display:none !important; } .main-grid{ grid-template-columns:1fr !important; } .page{ box-shadow:none; border:none; margin:0; border-radius:0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page" id="page">
+    <header>
+      <div class="title">
+        <div style="font-size:1.6rem">🏑</div>
+        <div>
+          <h1 id="mainTitle">🏆 Torneo de Nadal de Hóckey — CEIP Balaídos</h1>
+          <p class="subtitle" id="subtitle">Xestiona equipos, resultados e eliminatorias (en galego)</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <input id="schoolYear" class="year-input admin-only" type="text" value="2025–2026" title="Curso escolar" />
+        <button onclick="saveYear()" class="admin-only">💾 Gardar curso</button>
+        <button class="gray" onclick="printPage()">🖨️ Imprimir / Gardar PDF</button>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <main>
+        <section class="card">
+          <h2 style="margin:0;color:var(--accent)">📋 Equipos e liguiñas</h2>
+          <p style="margin:6px 0 12px 0; color:var(--muted)">Engade os equipos en cada grupo. Xera as xornadas (a dúas voltas) e introduce os resultados.</p>
+
+          <div class="groups-grid" id="groupsContainer">
+            <!-- As tarxetas dos grupos insírense aquí con JavaScript -->
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;" class="admin-only">
+            <button onclick="generateAllSchedulesCycle('2ciclo')">🎯 Xerar xornadas (2º ciclo)</button>
+            <button onclick="generateAllSchedulesCycle('3ciclo')">🎯 Xerar xornadas (3º ciclo)</button>
+            <button class="warn" onclick="generatePlayoffForCycle('2ciclo')">🏅 Xerar eliminatorias (2º ciclo)</button>
+            <button class="warn" onclick="generatePlayoffForCycle('3ciclo')">🏅 Xerar eliminatorias (3º ciclo)</button>
+          </div>
+
+          <div id="playoffsArea" class="playoff-section"></div>
+        </section>
+      </main>
+
+      <aside class="aside">
+        <div class="card">
+          <h3 style="margin:0;color:var(--accent)">⚙️ Xestión de datos</h3>
+          <p class="subtitle" style="margin:8px 0" id="data-management-subtitle">Os cambios gárdanse automaticamente. Exporta, importa ou reinicia cando queiras.</p>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap;" class="admin-only">
+            <button onclick="exportData()">📤 Exportar (copiar JSON)</button>
+            <button class="warn" onclick="downloadJSON()">⬇️ Descargar JSON</button>
+            <button onclick="showImport()">📥 Importar/Colar</button>
+            <button class="danger" onclick="confirmReset()">🗑️ Reiniciar</button>
+          </div>
+
+          <div id="import-area" style="display:none; margin-top:8px" class="admin-only">
+            <textarea id="import-text" rows="6" style="width:100%; padding:8px; border-radius:8px; border:1px solid #e6f2ff;" placeholder='Pega aquí o JSON exportado e logo preme "Importar"'></textarea>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <button onclick="importFromText()">Importar</button>
+              <button class="gray" onclick="hideImport()">Cancelar</button>
+            </div>
+          </div>
+          <hr style="margin:12px 0;border:none;border-top:1px dashed #eef6ff" />
+          <h4 style="margin:0;color:var(--accent)">📊 Resumo rápido</h4>
+          <div id="summary" style="margin-top:8px; color:var(--muted)"></div>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3 style="margin:0;color:var(--accent)">🏆 Podio (auto)</h3>
+          <div id="podium" style="margin-top:8px; color:var(--muted)"></div>
+        </div>
+      </aside>
+    </div>
+    <footer>CEIP Balaídos — Torneo de Nadal • Deseño e xestión en galego — Datos gardados localmente.</footer>
+  </div>
+</div>
+<div id="banner" class="banner"></div>
+
+<script>
+/* ---------- Configuración ---------- */
+const GROUP_IDS_2 = ['3A','3B','4A','4B'];
+const GROUP_IDS_3 = ['5A','5B','6A','6B'];
+const ALL_GROUPS = GROUP_IDS_2.concat(GROUP_IDS_3);
+const STORAGE_KEY = 'ceip_balaidos_torneo_vfinal_xornadas'; 
+let state = {};
+
+/* ---------- Helpers e Título ---------- */
+function toRoman(num){ if(num<=0)return''; const r=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]; let s=''; for(const[v,c]of r){while(num>=v){s+=c;num-=v;}} return s; }
+function parseFirstYear(str){ if(!str)return null; const m=str.match(/(\d{4})/); return m?Number(m[1]):null; }
+const BASE_EDIT_YEAR = 2025; const BASE_EDITION_NUM = 19;
+
+/* ---------- Estado (Carga/Gardado) ---------- */
+function defaultGroupObj(){ return { teams: [], rounds: [] }; } 
+function initEmptyState(){ state={year:'2025–2026', groups:{}, playoffs:{'2ciclo':null,'3ciclo':null}}; ALL_GROUPS.forEach(g=>state.groups[g]=defaultGroupObj()); saveState(); }
+function loadState(){ const raw=localStorage.getItem(STORAGE_KEY); if(raw){ try{state=JSON.parse(raw);}catch(e){console.warn('error parse state',e);initEmptyState();}}else initEmptyState(); ALL_GROUPS.forEach(g=>{if(!state.groups[g])state.groups[g]=defaultGroupObj();}); }
+function saveState(){ const urlParams=new URLSearchParams(window.location.search); const isViewMode=urlParams.get('modo')==='ver'; if(!isViewMode)localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); renderSummary(); renderPodium(); }
+
+function updateTitleFromYear(){ const y=state.year||document.getElementById('schoolYear').value||'2025–2026'; const fy=parseFirstYear(y)||BASE_EDIT_YEAR; const ed=BASE_EDITION_NUM+(fy-BASE_EDIT_YEAR); const ro=toRoman(ed); const ti=`${ro?ro+' ':''}Torneo de Nadal de Hóckey CEIP Balaídos ${y}`; document.getElementById('mainTitle').textContent=`🏆 ${ti}`; document.getElementById('subtitle').textContent=`Curso escolar: ${y}`; }
+
+/* ---------- Interface de Grupos ---------- */
+function makeGroupCard(id){
+  const div=document.createElement('div'); div.className='group-card'; div.id='card-'+id;
+  div.innerHTML=`<h3>Grupo ${id}</h3> <div class="teams-list" id="teams-${id}"></div>
+  <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap" class="admin-only"> <button onclick="addTeam('${id}')">➕</button> <button class="gray" onclick="removeTeam('${id}')">➖</button> <button onclick="saveTeams('${id}')">💾 Gardar equipos</button> </div>
+  <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap" class="admin-only"> <button onclick="generateSchedule('${id}')">🎯 Xerar xornadas</button> <button class="gray" onclick="clearMatches('${id}')">♻️ Borrar xornadas</button> </div>
+  <div id="matches-${id}" class="matches-container"></div> <div class="standings" id="standings-${id}"></div>`;
+  return div;
+}
+function renderAllGroups(){ const c=document.getElementById('groupsContainer'); c.innerHTML=''; ALL_GROUPS.forEach(g=>c.appendChild(makeGroupCard(g))); ALL_GROUPS.forEach(renderTeamsInputs); ALL_GROUPS.forEach(renderMatchesAndStandings); }
+
+/* ---------- Manipulación de Equipos ---------- */
+function renderTeamsInputs(id){ if(!state.groups[id])state.groups[id]=defaultGroupObj(); const l=document.getElementById('teams-'+id); l.innerHTML=''; const t=state.groups[id].teams||[]; if(t.length===0){ for(let i=0;i<4;i++){ const inp=document.createElement('input');inp.type='text';inp.placeholder=`Equipo ${i+1}`; l.appendChild(inp);}}else{ t.forEach((team,i)=>{ const inp=document.createElement('input');inp.type='text';inp.value=team;l.appendChild(inp);});}}
+function addTeam(id){ const l=document.getElementById('teams-'+id); const idx=l.children.length; const inp=document.createElement('input');inp.type='text';inp.placeholder=`Equipo ${idx+1}`;l.appendChild(inp); }
+function removeTeam(id){ const l=document.getElementById('teams-'+id); if(l.lastElementChild)l.removeChild(l.lastElementChild); }
+function saveTeams(id){ const l=document.getElementById('teams-'+id); const t=[]; for(const c of l.children){ const v=(c.value||'').trim(); if(v)t.push(v);} state.groups[id]=state.groups[id]||defaultGroupObj(); state.groups[id].teams=t; state.groups[id].rounds=[]; saveState(); renderMatchesAndStandings(id); }
+
+/* ---------- Xerador de Xornadas (sen cambios) ---------- */
+function generateSchedule(id){
+  const g = state.groups[id];
+  if(!g || !g.teams || g.teams.length < 2){ alert('Engade polo menos 2 equipos para xerar as xornadas.'); return; }
+  let teams = [...g.teams]; const rounds = []; const REST_KEY = "DESCANSA";
+  if (teams.length % 2 !== 0) teams.push(REST_KEY);
+  const numRounds = teams.length - 1;
+  for (let i = 0; i < numRounds; i++) {
+    const roundMatches = []; let restingTeamIdx = null;
+    for (let j = 0; j < teams.length / 2; j++) {
+      const teamA_idx = g.teams.indexOf(teams[j]);
+      const teamB_idx = g.teams.indexOf(teams[teams.length - 1 - j]);
+      if (teams[j] === REST_KEY) restingTeamIdx = teamB_idx;
+      else if (teams[teams.length - 1 - j] === REST_KEY) restingTeamIdx = teamA_idx;
+      else { roundMatches.push({ id: `${id}_r${i}_${j}`, a: teamA_idx, b: teamB_idx, scoreA: null, scoreB: null }); }
+    }
+    rounds.push({ roundNum: i + 1, matches: roundMatches, restingTeamIdx });
+    teams.splice(1, 0, teams.pop());
+  }
+  const secondLegRounds = rounds.map((round, i) => ({
+    roundNum: numRounds + i + 1,
+    matches: round.matches.map((match, j) => ({ id: `${id}_r${numRounds+i}_${j}`, a: match.b, b: match.a, scoreA: null, scoreB: null })),
+    restingTeamIdx: round.restingTeamIdx
+  }));
+  state.groups[id].rounds = [...rounds, ...secondLegRounds];
+  saveState();
+  renderMatchesAndStandings(id);
+}
+function generateAllSchedulesCycle(cycle){ const ids=cycle==='2ciclo'?GROUP_IDS_2:GROUP_IDS_3; ids.forEach(id=>{if(state.groups[id]&&state.groups[id].teams&&state.groups[id].teams.length>=2)generateSchedule(id);});}
+
+/* ---------- Renderizado de Xornadas e Partidos (sen cambios) ---------- */
+function renderMatchesAndStandings(id){
+  const panel = document.getElementById('matches-' + id);
+  const standingsDiv = document.getElementById('standings-' + id);
+  panel.innerHTML = ''; standingsDiv.innerHTML = '';
+  const g = state.groups[id] || defaultGroupObj();
+  const teams = g.teams || [];
+  if(!g.rounds || g.rounds.length === 0){
+    panel.innerHTML = '<div style="color:var(--muted); text-align:center; padding:10px 0;">Sen xornadas xeradas.</div>';
+  } else {
+    g.rounds.forEach(round => {
+      const roundHeader = document.createElement('div'); roundHeader.className = 'round-header'; roundHeader.textContent = `Xornada ${round.roundNum}`; panel.appendChild(roundHeader);
+      if (round.restingTeamIdx !== null) { const restingDiv = document.createElement('div'); restingDiv.className = 'resting-team'; restingDiv.textContent = `🧘 Descansa: ${teams[round.restingTeamIdx]}`; panel.appendChild(restingDiv); }
+      round.matches.forEach(m => {
+        const row = document.createElement('div'); row.className = 'match'; const nameA = teams[m.a], nameB = teams[m.b];
+        row.innerHTML = `<div class="teams">${nameA} vs ${nameB}</div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="number" min="0" value="${m.scoreA ?? ''}" onchange="scoreChanged('${id}','${m.id}')" />
+            <span>:</span>
+            <input type="number" min="0" value="${m.scoreB ?? ''}" onchange="scoreChanged('${id}','${m.id}')" />
+          </div>`;
+        row.querySelector(`input[onchange="scoreChanged('${id}','${m.id}')"]`).id = `sA-${m.id}`;
+        row.querySelectorAll(`input[onchange="scoreChanged('${id}','${m.id}')"]`)[1].id = `sB-${m.id}`;
+        panel.appendChild(row);
+      });
+    });
+  }
+  renderStandings(id);
+}
+
+/* ---------- Manexo de puntuacións (sen cambios) ---------- */
+function scoreChanged(groupId, matchId){
+  const g = state.groups[groupId]; if(!g) return; let match = null;
+  for (const round of g.rounds) { match = round.matches.find(m => m.id === matchId); if (match) break; }
+  if(!match) return;
+  const sA = document.getElementById(`sA-${matchId}`).value; const sB = document.getElementById(`sB-${matchId}`).value;
+  match.scoreA = sA === '' ? null : Number(sA); match.scoreB = sB === '' ? null : Number(sB);
+  saveState(); renderStandings(groupId);
+  if(GROUP_IDS_2.includes(groupId)) checkAutoPlayoffs('2ciclo'); if(GROUP_IDS_3.includes(groupId)) checkAutoPlayoffs('3ciclo');
+}
+function clearMatches(id){ if(!confirm('Queres borrar todas as xornadas deste grupo?'))return; if(state.groups[id])state.groups[id].rounds=[]; saveState(); renderMatchesAndStandings(id); }
+
+/* ---------- Cálculo da clasificación (sen cambios) ---------- */
+function computeStatsForGroup(id){
+  const g = state.groups[id] || defaultGroupObj(); const teams = g.teams || [];
+  const stats = teams.map((t, idx) => ({ name:t, idx, P:0, W:0, D:0, L:0, GF:0, GA:0, GD:0, PTS:0 }));
+  const allMatches = (g.rounds || []).flatMap(r => r.matches);
+  allMatches.forEach(m=>{
+    if(m.scoreA===null||m.scoreB===null) return;
+    const a=m.a, b=m.b, sA=m.scoreA, sB=m.scoreB;
+    stats[a].P++; stats[b].P++; stats[a].GF+=sA; stats[a].GA+=sB; stats[b].GF+=sB; stats[b].GA+=sA;
+    if(sA>sB){stats[a].W++;stats[b].L++;stats[a].PTS+=3;}
+    else if(sA<sB){stats[b].W++;stats[a].L++;stats[b].PTS+=3;}
+    else{stats[a].D++;stats[b].D++;stats[a].PTS+=1;stats[b].PTS+=1;}
+  });
+  stats.forEach(s => s.GD = s.GF - s.GA);
+  stats.sort((x,y)=>{ if(y.PTS!==x.PTS)return y.PTS-x.PTS; if(y.GD!==x.GD)return y.GD-x.GD; return y.GF-x.GF;});
+  return stats;
+}
+function renderStandings(id){
+  const container=document.getElementById('standings-'+id); container.innerHTML='';
+  const stats=computeStatsForGroup(id); if(stats.length===0)return;
+  const table=document.createElement('table');
+  table.innerHTML=`<thead><tr><th>#</th><th>Equipo</th><th class="num">Pts</th><th class="num">XX</th><th class="num">V</th><th class="num">E</th><th class="num">D</th><th class="num">GF</th><th class="num">GC</th><th class="num">DG</th></tr></thead>`;
+  const tbody=document.createElement('tbody');
+  stats.forEach((s,i)=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td><b>${i+1}</b></td><td>${s.name}</td><td class="num">${s.PTS}</td><td class="num">${s.P}</td><td class="num">${s.W}</td><td class="num">${s.D}</td><td class="num">${s.L}</td><td class="num">${s.GF}</td><td class="num">${s.GA}</td><td class="num">${s.GD}</td>`; tbody.appendChild(tr);});
+  table.appendChild(tbody); container.appendChild(table);
+}
+
+/* ---------- Playoffs (sen cambios) ---------- */
+function top2FromGroup(id){ return computeStatsForGroup(id).slice(0,2).map(s=>({name:s.name,idx:s.idx})); }
+function allMatchesCompletedForGroup(id){ const g=state.groups[id]; if(!g||!g.rounds||g.rounds.length===0)return false; return g.rounds.flatMap(r=>r.matches).every(m=>m.scoreA!==null&&m.scoreB!==null); }
+function generatePlayoffForCycle(cycle){const mapping=cycle==='2ciclo'?{levels:[3,4]}:{levels:[5,6]};const bracket={levels:{},cycleFinal:null};mapping.levels.forEach(level=>{const groupA=`${level}A`,groupB=`${level}B`;const topA=top2FromGroup(groupA);const topB=top2FromGroup(groupB);const semis=[];if(topA[0]&&topB[1])semis.push({id:`${cycle}_${level}_S1`,a:topA[0],b:topB[1],scoreA:null,scoreB:null,winner:null});if(topA[1]&&topB[0])semis.push({id:`${cycle}_${level}_S2`,a:topA[1],b:topB[0],scoreA:null,scoreB:null,winner:null});bracket.levels[level]={semis,final:null,winner:null};});state.playoffs[cycle]=bracket;saveState();renderPlayoffsForCycle(cycle);showBanner(`Playoffs xerados para ${cycle==='2ciclo'?'2º ciclo':'3º ciclo'}.`);}
+function advancePlayoffsForCycle(cycle){const bracket=state.playoffs[cycle];if(!bracket)return;Object.keys(bracket.levels).forEach(level=>{const lvl=bracket.levels[level];if(lvl.semis&&lvl.semis.length>0){const winners=[];lvl.semis.forEach(m=>{if(m.scoreA===null||m.scoreB===null)return;m.winner=(m.scoreA>m.scoreB)?m.a:(m.scoreB>m.scoreA?m.b:null);if(m.winner)winners.push(m.winner);});if(winners.length===lvl.semis.length&&winners.length>=1&&!lvl.final){if(winners.length===1){lvl.winner=winners[0];}else{lvl.final={id:`${cycle}_${level}_F1`,a:winners[0],b:winners[1],scoreA:null,scoreB:null,winner:null};}}if(lvl.final&&lvl.final.scoreA!==null&&lvl.final.scoreB!==null){lvl.final.winner=(lvl.final.scoreA>lvl.final.scoreB)?lvl.final.a:(lvl.final.scoreB>lvl.final.scoreA?lvl.final.b:null);if(lvl.final.winner)lvl.winner=lvl.final.winner;}}});const levels=Object.keys(bracket.levels);const winners=levels.map(l=>bracket.levels[l].winner).filter(Boolean);if(winners.length===levels.length&&winners.length>=2&&!bracket.cycleFinal){bracket.cycleFinal={id:`${cycle}_C_FINAL`,a:winners[0],b:winners[1],scoreA:null,scoreB:null,winner:null};}if(bracket.cycleFinal&&bracket.cycleFinal.scoreA!==null&&bracket.cycleFinal.scoreB!==null){bracket.cycleFinal.winner=(bracket.cycleFinal.scoreA>bracket.cycleFinal.scoreB)?bracket.cycleFinal.a:(bracket.cycleFinal.scoreB>bracket.cycleFinal.scoreA?bracket.cycleFinal.b:null);}saveState();}
+function renderPlayoffsForCycle(cycle){const area=document.getElementById('playoffsArea');area.innerHTML='';['2ciclo','3ciclo'].forEach(c=>{const title=document.createElement('h3');title.style.color='var(--accent)';title.textContent=c==='2ciclo'?'Eliminatorias 2º Ciclo':'Eliminatorias 3º Ciclo';area.appendChild(title);const bracket=state.playoffs[c];if(!bracket){const p=document.createElement('div');p.style.color='var(--muted)';p.textContent='Aínda non hai eliminatorias xeradas.';area.appendChild(p);return;}Object.keys(bracket.levels).forEach(level=>{const lvl=bracket.levels[level];const lvlTitle=document.createElement('h4');lvlTitle.style.cssText='margin:8px 0 4px;color:var(--accent)';lvlTitle.textContent=`Nivel ${level}`;area.appendChild(lvlTitle);if(lvl.semis&&lvl.semis.length>0){lvl.semis.forEach(m=>{const div=document.createElement('div');div.className='playoff-match';div.innerHTML=`<div><b>${m.a.name}</b></div><div style="display:flex;align-items:center;gap:6px"><input type="number" min=0 style="width:56px" value="${m.scoreA??''}"> : <input type="number" min=0 style="width:56px" value="${m.scoreB??''}"></div><div><b>${m.b.name}</b></div>`;const inputs=div.querySelectorAll('input');inputs[0].onchange=()=>{m.scoreA=inputs[0].value===''?null:Number(inputs[0].value);advanceAndRender(c);};inputs[1].onchange=()=>{m.scoreB=inputs[1].value===''?null:Number(inputs[1].value);advanceAndRender(c);};area.appendChild(div);});}if(lvl.final){const f=lvl.final;const df=document.createElement('div');df.className='playoff-match';df.style.background='#f0fff4';df.innerHTML=`<div><b>${f.a.name}</b></div><div style="display:flex;gap:6px"><input type="number" min=0 style="width:56px" value="${f.scoreA??''}"> : <input type="number" min=0 style="width:56px" value="${f.scoreB??''}"></div><div><b>${f.b.name}</b></div>`;const ins=df.querySelectorAll('input');ins[0].onchange=()=>{f.scoreA=ins[0].value===''?null:Number(ins[0].value);advanceAndRender(c);};ins[1].onchange=()=>{f.scoreB=ins[1].value===''?null:Number(ins[1].value);advanceAndRender(c);};area.appendChild(df);}if(lvl.winner){const w=document.createElement('div');w.style.marginTop='6px';w.innerHTML=`<i>Gañador nivel ${level}: <b>${lvl.winner.name}</b></i>`;area.appendChild(w);}});if(bracket.cycleFinal){const cf=bracket.cycleFinal;const sep=document.createElement('h4');sep.style.cssText='color:var(--danger);margin-top:8px';sep.textContent='Final do ciclo';area.appendChild(sep);const div=document.createElement('div');div.className='playoff-match';div.style.background='#fff6f6';div.innerHTML=`<div><b>${cf.a.name}</b></div><div style="display:flex;gap:6px"><input type="number" min=0 style="width:56px" value="${cf.scoreA??''}"> : <input type="number" min=0 style="width:56px" value="${cf.scoreB??''}"></div><div><b>${cf.b.name}</b></div>`;const ins=div.querySelectorAll('input');ins[0].onchange=()=>{cf.scoreA=ins[0].value===''?null:Number(ins[0].value);advanceAndRender(c);};ins[1].onchange=()=>{cf.scoreB=ins[1].value===''?null:Number(ins[1].value);advanceAndRender(c);};area.appendChild(div);if(cf.winner)area.appendChild(Object.assign(document.createElement('div'),{innerHTML:`<b>Gañador do ${c==='2ciclo'?'2º':'3º'} ciclo: ${cf.winner.name}</b>`,style:'margin-top:8px;font-size:1.1rem;text-align:center'}));}const ctr=document.createElement('div');ctr.style.cssText='margin-top:8px;display:flex;gap:8px;';ctr.classList.add('admin-only');const btn=document.createElement('button');btn.className='gray';btn.textContent='♻️ Reiniciar eliminatorias';btn.onclick=()=>{if(confirm('Borrar eliminatorias deste ciclo?')){state.playoffs[c]=null;saveState();renderPlayoffsForCycle(c);}};ctr.appendChild(btn);area.appendChild(ctr);});}
+function advanceAndRender(cycle){advancePlayoffsForCycle(cycle);renderPlayoffsForCycle(cycle);saveState();}
+function checkAutoPlayoffs(cycle){const groups=cycle==='2ciclo'?GROUP_IDS_2:GROUP_IDS_3;const allGenerated=groups.every(id=>state.groups[id]&&state.groups[id].rounds&&state.groups[id].rounds.length>0);if(!allGenerated)return;const allCompleted=groups.every(id=>allMatchesCompletedForGroup(id));if(allCompleted){if(!state.playoffs[cycle]){generatePlayoffForCycle(cycle);showBanner(`Eliminatorias xeradas automaticamente para ${cycle==='2ciclo'?'2º ciclo':'3º ciclo'}.`);}}}
+function exportData(){const s=JSON.stringify(state,null,2);navigator.clipboard?.writeText(s).then(()=>showBanner('Datos copiados ao portapapeis.'),()=>{document.getElementById('import-text').value=s;showImport();showBanner('Copia o JSON manualmente.');});}
+function downloadJSON(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`torneo_balaidos_${(state.year||'ano').replace(/[^0-9–-]/g,'')}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}
+function showImport(){document.getElementById('import-area').style.display='block';}
+function hideImport(){document.getElementById('import-area').style.display='none';}
+function importFromText(){const t=document.getElementById('import-text').value.trim();if(!t)return alert('Pega o JSON antes de importar.');try{const p=JSON.parse(t);state=p;ALL_GROUPS.forEach(g=>{if(!state.groups[g])state.groups[g]=defaultGroupObj();});if(!state.playoffs)state.playoffs={'2ciclo':null,'3ciclo':null};saveState();renderAllGroups();renderPlayoffsForCycle('2ciclo');renderPlayoffsForCycle('3ciclo');hideImport();showBanner('Importación completada.');}catch(e){alert('Erro ao procesar JSON: '+e.message);}}
+function confirmReset(){if(confirm('Estás seguro de que queres reiniciar todo o torneo? Borraranse todos os datos.'))resetAll();}
+function resetAll(){localStorage.removeItem(STORAGE_KEY);initEmptyState();renderAllGroups();renderPlayoffsForCycle('2ciclo');renderPlayoffsForCycle('3ciclo');}
+function printPage(){window.print();}
+function renderSummary(){const el=document.getElementById('summary');const nTeams=ALL_GROUPS.reduce((a,id)=>a+((state.groups[id]&&state.groups[id].teams)?state.groups[id].teams.length:0),0);const nMatches=ALL_GROUPS.reduce((a,id)=>a+(state.groups[id]?.rounds||[]).flatMap(r=>r.matches).filter(x=>x.scoreA!==null).length,0);el.innerHTML=`<div>Equipos: <b>${nTeams}</b></div><div>Encontros xogados: <b>${nMatches}</b></div>`;}
+function renderPodium(){const pod=document.getElementById('podium');pod.innerHTML='';['2ciclo','3ciclo'].forEach(cycle=>{const b=state.playoffs&&state.playoffs[cycle];if(b&&b.cycleFinal&&b.cycleFinal.winner){pod.innerHTML+=`<div style="margin-bottom:6px"><strong>${cycle==='2ciclo'?'2º Ciclo':'3º Ciclo'}</strong>: 🎖️ ${b.cycleFinal.winner.name}</div>`;}});}
+let bannerTimeout=null; function showBanner(msg,time=4000){const b=document.getElementById('banner');b.textContent=msg;b.style.display='block';if(bannerTimeout)clearTimeout(bannerTimeout);bannerTimeout=setTimeout(()=>{b.style.display='none';},time);}
+function saveYear(){const v=document.getElementById('schoolYear').value.trim();if(v)state.year=v;saveState();updateTitleFromYear();showBanner('Curso escolar gardado: '+state.year);}
+(function init(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const isViewMode = urlParams.get('modo') === 'ver';
+
+  if (isViewMode) {
+    document.body.classList.add('view-mode');
+    document.title += " — Consulta";
+    document.getElementById('data-management-subtitle').textContent = 'Resultados e clasificacións en tempo real.';
+  } else {
+    document.title += " — Xestión";
+  }
+
+  loadState();
+  document.getElementById('schoolYear').value=state.year||'2025–2026';
+  updateTitleFromYear();
+  renderAllGroups();
+  renderPlayoffsForCycle('2ciclo');
+  renderPlayoffsForCycle('3ciclo');
+  renderSummary();
+  renderPodium();
+  
+  if (isViewMode) {
+      document.querySelectorAll('input').forEach(i => i.disabled = true);
+  } else {
+      checkAutoPlayoffs('2ciclo');
+      checkAutoPlayoffs('3ciclo');
+  }
+})();
+</script>
+</body>
+</html>
+
+  
