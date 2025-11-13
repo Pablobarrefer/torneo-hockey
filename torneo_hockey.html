@@ -88,21 +88,26 @@
 <body>
 <div class="wrap">
   <div class="page" id="page">
-    <header>
-      <div class="title">
-        <div style="font-size:1.6rem">🏑</div>
-        <div>
-          <h1 id="mainTitle">🏆 Torneo de Nadal de Hóckey — CEIP Balaídos</h1>
-          <p class="subtitle" id="subtitle">Xestiona equipos, resultados e eliminatorias (en galego)</p>
-        </div>
-      </div>
+        
+<header>
+  <div class="title">
+    <!-- O LOGO VAI AQUÍ -->
+    <img src="http://www.edu.xunta.gal/centros/ceipbalaidos/system/files/u2/logo2.JPG" alt="Logo do CEIP Balaídos" style="height: 50px; border-radius: 8px; background-color: white; padding: 2px;">
+    
+    <div style="font-size:1.6rem">🏑</div>
+    <div>
+      <h1 id="mainTitle">🏆 Torneo de Nadal de Hóckey — CEIP Balaídos</h1>
+      <p class="subtitle" id="subtitle">Xestiona equipos, resultados e eliminatorias (en galego)</p>
+    </div>
+  </div>
+  <div class="controls">
+    <input id="schoolYear" class="year-input admin-only" type="text" value="2025–2026" title="Curso escolar" />
+    <button onclick="saveYear()" class="admin-only">💾 Gardar curso</button>
+    <button class="gray" onclick="printPage()">🖨️ Imprimir / Gardar PDF</button>
+  </div>
+</header>
 
-      <div class="controls">
-        <input id="schoolYear" class="year-input admin-only" type="text" value="2025–2026" title="Curso escolar" />
-        <button onclick="saveYear()" class="admin-only">💾 Gardar curso</button>
-        <button class="gray" onclick="printPage()">🖨️ Imprimir / Gardar PDF</button>
-      </div>
-    </header>
+  
 
     <div class="main-grid">
       <main>
