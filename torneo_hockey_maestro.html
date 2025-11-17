@@ -6,11 +6,20 @@
 <title>🏑 XIX Torneo de Nadal de hóckey CEIP Balaídos – Xestión</title>
 <style>
   html,body{margin:0;padding:0;width:100%;overflow-x:hidden;font-family:Inter,"Segoe UI",Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;background:linear-gradient(180deg,#f0f9ff,#fff);color:#0f172a}:root{--accent:#0056b3;--accent-2:#00a8ff;--muted:#6b7280;--card:#ffffff;--gold:#ffc107;--success:#28a745;--danger:#dc3545}.wrap{max-width:1400px;margin:24px auto;padding:18px;box-sizing:border-box}.page{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 8px 30px rgba(6,10,15,.06);border:1px solid rgba(0,0,0,.03)}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.title{display:flex;gap:12px;align-items:center}.logo{height:40px;width:40px;border-radius:50%;object-fit:contain;background:#fff;border:1px solid #eee}h1{margin:0;font-size:1.25rem;background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}button{font-family:inherit;cursor:pointer;border-radius:8px;border:none;padding:8px 10px;background:var(--accent);color:#fff;box-shadow:0 6px 12px rgba(0,86,179,.12);transition:background .2s ease}button.gray{background:#6b7280}button.warn{background:var(--gold);color:#111}button.danger{background:var(--danger)}button.projector-btn{background:#5a67d8}
-  .filter-bar{display:flex;gap:6px;margin:20px 0;padding-bottom:20px;border-bottom:1px solid #eef6ff;flex-wrap:wrap}
+  .filter-bar{display:flex;gap:6px;margin:0 0 20px 0;padding-bottom:20px;border-bottom:1px solid #eef6ff;flex-wrap:wrap}
   .filter-bar button{background:var(--muted);opacity:.7;padding:6px 8px;font-size:.85rem}
   .filter-bar button.active{background:var(--accent);opacity:1}
-  .main-grid{display:grid;grid-template-columns:1fr 360px;gap:24px;margin-top:16px;align-items:start}@media (max-width:1100px){.main-grid{grid-template-columns:1fr}.aside{order:-1;margin-bottom:16px}}.card{background:linear-gradient(180deg,#fff,#fbfdff);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,.03);border:1px solid rgba(3,105,161,.04)}.groups-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.group-card{padding:14px;border-radius:10px;background:#fff;border:1px solid #e2e8f0}
-  .group-card h3{margin:0 0 8px;color:var(--accent);font-size:1rem}.teams-list{display:flex;flex-direction:column;gap:8px}
+  .main-grid{display:flex;flex-direction:column;gap:24px;margin-top:16px}
+  @media (min-width:768px){
+    .content-wrapper{display:grid;grid-template-columns:1fr;gap:24px}
+  }
+  .card{background:linear-gradient(180deg,#fff,#fbfdff);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,.03);border:1px solid rgba(3,105,161,.04);margin-bottom:16px}.groups-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}.group-card{padding:14px;border-radius:10px;background:#fff;border:1px solid #e2e8f0}
+  .group-card h3{margin:0 0 8px;color:var(--accent);font-size:1rem}
+  .section-title{display:inline-block;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:8px 16px;border-radius:8px;margin-bottom:12px;font-weight:bold;font-size:0.95rem}
+  .teams-list{display:flex;flex-direction:column;gap:8px}
+  .team-entry{display:flex;align-items:center;gap:8px}
+  .team-entry .shield-preview{width:24px;height:24px;border-radius:4px;object-fit:cover;background:#eee;flex-shrink:0}
+  .team-entry .inputs-wrapper{flex-grow:1;display:flex;flex-direction:column;gap:4px}
   .team-entry .shield-input{display:none}
   .team-entry.edit-shield .shield-input{display:block}
   .teams-list input{padding:8px;border-radius:8px;border:1px solid #e9f2ff;background:#fbfeff;box-sizing:border-box;width:100%}.shield-image{width:24px;height:24px;border-radius:4px;object-fit:cover;margin-right:8px;vertical-align:middle;background:#eee}.matches-container{margin-top:10px;display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto;padding-right:6px}
@@ -25,8 +34,18 @@
   .playoff-match{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#fff9f0;border:1px solid rgba(0,0,0,.03);margin-bottom:8px}
   .playoff-section{margin-top:16px;padding:12px;background:#f8f9fa;border-radius:8px}
   .playoff-section h5{margin:0 0 8px;color:var(--accent);font-size:0.9rem}
-  footer{margin-top:14px;text-align:center;color:var(--muted);font-size:.9rem}.banner{position:fixed;right:18px;top:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.12);display:none;z-index:9999}body.projector-mode{font-size:115%;background:#fff}.projector-mode .header,.projector-mode .admin-actions-container,.projector-mode footer,.projector-mode .controls,.projector-mode .filter-bar{display:none}.projector-mode .aside{display:block!important}.projector-mode .aside .card:first-child{display:none}.projector-mode .main-grid{grid-template-columns:1fr 400px;gap:16px}.projector-mode .wrap{max-width:100%;padding:10px}.projector-mode .page{box-shadow:none;border:none}.projector-mode .matches-container:not(.collapsed){max-height:none}.projector-mode button[id^="btn-toggle-matches"]{display:inline-block!important}.projector-mode button[id^="btn-toggle-shields"]{display:none!important}#projectorModeBtnExit{position:fixed;top:10px;right:10px;z-index:1000}@media print{body{background:#fff}.banner,button,.controls{display:none!important}.main-grid{grid-template-columns:1fr!important}.page{box-shadow:none;border:none;margin:0;border-radius:0}}
-  .view-mode .controls, .view-mode .admin-actions-container, .view-mode .aside .card:first-child > div:first-of-type, .view-mode .aside .card:first-child hr, .view-mode button[id^="btn-add-team"], .view-mode button[id^="btn-remove-team"], .view-mode button[id^="btn-save-teams"], .view-mode button[id^="btn-gen-schedule"], .view-mode button[id^="btn-clear-matches"], .view-mode button[id^="btn-toggle-shields"], .view-mode button[id^="btn-gen-playoffs"] { display: none !important; }
+  footer{margin-top:14px;text-align:center;color:var(--muted);font-size:.9rem}.banner{position:fixed;right:18px;top:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.12);display:none;z-index:9999}
+  body.projector-mode{font-size:115%;background:#fff}
+  .projector-mode .header,.projector-mode .admin-actions-container,.projector-mode footer,.projector-mode .controls,.projector-mode .filter-bar,.projector-mode .management-section{display:none}
+  .projector-mode .main-grid{gap:16px}
+  .projector-mode .wrap{max-width:100%;padding:10px}
+  .projector-mode .page{box-shadow:none;border:none}
+  .projector-mode .matches-container:not(.collapsed){max-height:none}
+  .projector-mode button[id^="btn-toggle-matches"]{display:inline-block!important}
+  .projector-mode button[id^="btn-toggle-shields"]{display:none!important}
+  #projectorModeBtnExit{position:fixed;top:10px;right:10px;z-index:1000}
+  @media print{body{background:#fff}.banner,button,.controls{display:none!important}.page{box-shadow:none;border:none;margin:0;border-radius:0}}
+  .view-mode .controls, .view-mode .admin-actions-container, .view-mode .management-section, .view-mode button[id^="btn-add-team"], .view-mode button[id^="btn-remove-team"], .view-mode button[id^="btn-save-teams"], .view-mode button[id^="btn-gen-schedule"], .view-mode button[id^="btn-clear-matches"], .view-mode button[id^="btn-toggle-shields"], .view-mode button[id^="btn-gen-playoffs"] { display: none !important; }
   .view-mode input { pointer-events: none; background: #fdfdfd !important; border-color: transparent !important; }
   .view-mode .teams-list { gap: 4px; }
   .view-mode .team-entry { padding: 8px; background: #f8f9fa; border-radius: 6px; }
@@ -53,8 +72,11 @@
     </header>
 
     <div class="main-grid">
-      <main>
-        <div class="filter-bar">
+      <div class="content-wrapper">
+        <!-- LIGA EN CAJA -->
+        <div class="card">
+          <h3 style="margin:0 0 12px;color:var(--accent)">🏑 📊 LIGA</h3>
+          <div class="filter-bar">
           <button id="btn-filter-all" class="active">Ver Todo</button>
           <button id="btn-filter-c2">2º Ciclo</button>
           <button id="btn-filter-c3">3º Ciclo</button>
@@ -64,6 +86,7 @@
           <button id="btn-filter-6" class="gray">6º</button>
         </div>
     
+        <!-- LIGAS -->
         <div id="cycle-2-container" class="cycle-container">
           <h2 style="margin:0;color:var(--accent)">2º Ciclo (3º e 4º)</h2>
           <div id="level-3-container" class="level-container">
@@ -87,10 +110,20 @@
             <div class="groups-grid" id="groupsContainer6"></div>
           </div>
         </div>
-      </main>
+        <!-- FIN LIGA EN CAJA -->
 
-      <aside class="aside">
+        <!-- FASE FINAL -->
         <div class="card">
+          <h3 style="margin:0;color:var(--accent)">🏆 Fase Final</h3>
+          <div class="admin-actions-container" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+            <button id="btn-gen-playoffs-2" class="warn">🥇 Xerar 2º ciclo</button>
+            <button id="btn-gen-playoffs-3" class="warn">🥇 Xerar 3º ciclo</button>
+          </div>
+          <div id="playoffsArea"></div>
+        </div>
+
+        <!-- GESTIÓN DEL TORNEO -->
+        <div class="card management-section">
           <h3 style="margin:0;color:var(--accent)">⚙️ Xestión de datos</h3>
           <p class="subtitle" style="margin:8px 0">Os cambios gárdanse automaticamente.</p>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -111,15 +144,7 @@
           <div id="summary" style="margin-top:8px; color:var(--muted)"></div>
           <div id="podium" style="margin-top:8px; color:var(--muted)"></div>
         </div>
-        <div class="card" style="margin-top: 12px;">
-            <h3 style="margin:0;color:var(--accent)">🏆 Fase Final</h3>
-            <div class="admin-actions-container" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-              <button id="btn-gen-playoffs-2" class="warn">🥇 Xerar 2º ciclo</button>
-              <button id="btn-gen-playoffs-3" class="warn">🥇 Xerar 3º ciclo</button>
-            </div>
-            <div id="playoffsArea"></div>
-        </div>
-      </aside>
+      </div>
     </div>
     <footer style="padding: 24px 0 12px 0; text-align: center; color: var(--muted); font-size: .9rem;">CEIP Balaídos – Torneo de Nadal • Deseño e xestión en galego.</footer>
   </div>
@@ -214,8 +239,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
     },
-    renderTeamsInputs: function(id) { const list = document.getElementById(`teams-${id}`); if(!list) return; list.innerHTML = ''; const teams = this.state.groups[id]?.teams || []; if (teams.length === 0) { for (let i = 0; i < 4; i++) { this.addTeamInput(list, '', `Equipo ${i + 1}`, ''); } } else { teams.forEach(team => this.addTeamInput(list, team.name, 'Nome do equipo', team.shield || '')); } },
-    addTeamInput: function(list, name, placeholder, shieldUrl) { const entry = document.createElement('div'); entry.className = 'team-entry'; entry.innerHTML = `<input type="text" class="name-input" value="${name}" placeholder="${placeholder}"><input type="url" class="shield-input" value="${shieldUrl}" placeholder="URL do Escudo (Enlace Directo)">`; list.appendChild(entry); },
+    renderTeamsInputs: function(id) { 
+      const list = document.getElementById(`teams-${id}`); 
+      if(!list) return; 
+      list.innerHTML = ''; 
+      const teams = this.state.groups[id]?.teams || []; 
+      if (teams.length === 0) { 
+        for (let i = 0; i < 4; i++) { 
+          this.addTeamInput(list, '', `Equipo ${i + 1}`, ''); 
+        } 
+      } else { 
+        teams.forEach(team => this.addTeamInput(list, team.name, 'Nome do equipo', team.shield || '')); 
+      } 
+    },
+    addTeamInput: function(list, name, placeholder, shieldUrl) { 
+      const entry = document.createElement('div'); 
+      entry.className = 'team-entry'; 
+      entry.innerHTML = `
+        <img src="${shieldUrl || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" 
+             class="shield-preview" 
+             alt="escudo" 
+             onerror="this.style.display='none'" 
+             style="display:${shieldUrl ? 'block' : 'none'}">
+        <div class="inputs-wrapper">
+          <input type="text" class="name-input" value="${name}" placeholder="${placeholder}">
+          <input type="url" class="shield-input" value="${shieldUrl}" placeholder="URL do Escudo">
+        </div>
+      `; 
+      
+      // Evento para actualizar vista previa en tiempo real
+      const shieldInput = entry.querySelector('.shield-input');
+      const shieldPreview = entry.querySelector('.shield-preview');
+      shieldInput.addEventListener('input', function() {
+        const url = this.value.trim();
+        if(url) {
+          shieldPreview.src = url;
+          shieldPreview.style.display = 'block';
+        } else {
+          shieldPreview.style.display = 'none';
+        }
+      });
+      
+      list.appendChild(entry); 
+    },
     getTeamShield: function(team) { if (!team) return ''; return `<img src="${team.shield || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" class="shield-image" alt="escudo" onerror="this.style.display='none'">`; },
     renderMatchesAndStandings: function(id) { const panel = document.getElementById(`matches-${id}`); const standingsDiv = document.getElementById(`standings-${id}`); if (!panel || !standingsDiv) return; panel.innerHTML = ''; standingsDiv.innerHTML = ''; const g = this.state.groups[id] || { teams: [], rounds: [] }; const teams = g.teams || []; if (!g.rounds || g.rounds.length === 0) { panel.innerHTML = '<div style="color:var(--muted);text-align:center;padding:10px 0;">Sen xornadas xeradas.</div>'; } else { g.rounds.forEach(round => { const roundHeader = document.createElement('div'); roundHeader.className = 'round-header'; roundHeader.textContent = `Xornada ${round.roundNum}`; panel.appendChild(roundHeader); if (round.restingTeamIdx !== null && teams[round.restingTeamIdx]) { const restingDiv = document.createElement('div'); restingDiv.className = 'resting-team'; restingDiv.innerHTML = `🧘 Descansa: ${this.getTeamShield(teams[round.restingTeamIdx])} ${teams[round.restingTeamIdx].name}`; panel.appendChild(restingDiv); } round.matches.forEach(m => { const row = document.createElement('div'); row.className = 'match'; const teamA = teams[m.a], teamB = teams[m.b]; if (!teamA || !teamB) return; row.innerHTML = `<div class="teams">${this.getTeamShield(teamA)} ${teamA.name} vs ${this.getTeamShield(teamB)} ${teamB.name}</div><div style="display:flex;gap:6px;align-items:center;"><input type="number" min="0" value="${m.scoreA ?? ''}" data-group-id="${id}" data-match-id="${m.id}" data-score-type="A" style="width:50px;padding:4px;text-align:center"><span>:</span><input type="number" min="0" value="${m.scoreB ?? ''}" data-group-id="${id}" data-match-id="${m.id}" data-score-type="B" style="width:50px;padding:4px;text-align:center"></div>`; panel.appendChild(row); }); }); } this.renderStandings(id); },
     renderStandings: function(id) { 
@@ -684,31 +750,43 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('btn-filter-5').addEventListener('click', () => this.applyFilter('5'));
       document.getElementById('btn-filter-6').addEventListener('click', () => this.applyFilter('6'));
       
-      document.querySelector('main').addEventListener('click', (event) => {
+      document.addEventListener('click', (event) => {
         const button = event.target.closest('button[id^="btn-"]');
         if (!button) return;
-        const idParts = button.id.split('-');
-        if (idParts.length < 3) return;
-        const action = idParts[1];
-        const groupId = idParts[idParts.length - 1];
+        const buttonId = button.id;
         
-        if (Object.keys(this.config.GROUPS).includes(groupId)) {
-          if (action === 'add') this.addTeam(groupId);
-          if (action === 'remove') this.removeTeam(groupId);
-          if (action === 'save') this.saveTeams(groupId);
-          if (action === 'gen') this.generateSchedule(groupId);
-          if (action === 'clear') this.clearMatches(groupId);
-          if (action === 'toggle' && idParts[2] === 'matches') this.toggleMatchesVisibility(groupId);
-          if (action === 'toggle' && idParts[2] === 'shields') {
-            const teamList = document.getElementById(`teams-${groupId}`);
+        // Extraer el ID del grupo desde el botón
+        const matchToggle = buttonId.match(/^btn-toggle-matches-(.+)$/);
+        const matchShields = buttonId.match(/^btn-toggle-shields-(.+)$/);
+        const matchAdd = buttonId.match(/^btn-add-team-(.+)$/);
+        const matchRemove = buttonId.match(/^btn-remove-team-(.+)$/);
+        const matchSave = buttonId.match(/^btn-save-teams-(.+)$/);
+        const matchGen = buttonId.match(/^btn-gen-schedule-(.+)$/);
+        const matchClear = buttonId.match(/^btn-clear-matches-(.+)$/);
+        
+        if (matchToggle) {
+          this.toggleMatchesVisibility(matchToggle[1]);
+        } else if (matchShields) {
+          const teamList = document.getElementById(`teams-${matchShields[1]}`);
+          if(teamList) {
             teamList.querySelectorAll('.team-entry').forEach(entry => {
               entry.classList.toggle('edit-shield');
             });
           }
+        } else if (matchAdd) {
+          this.addTeam(matchAdd[1]);
+        } else if (matchRemove) {
+          this.removeTeam(matchRemove[1]);
+        } else if (matchSave) {
+          this.saveTeams(matchSave[1]);
+        } else if (matchGen) {
+          this.generateSchedule(matchGen[1]);
+        } else if (matchClear) {
+          this.clearMatches(matchClear[1]);
         }
       });
       
-      document.querySelector('main').addEventListener('change', (event) => {
+      document.addEventListener('change', (event) => {
         if (event.target.matches('input[type="number"][data-match-id]')) {
           this.handleScoreChange(event);
         }
@@ -740,5 +818,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
-  
