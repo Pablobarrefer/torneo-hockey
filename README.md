@@ -12,7 +12,7 @@ A ferramenta ten dous modos de uso principais, que se controlan a través da URL
 
 É o modo por defecto que permite editar todos os aspectos do torneo.
 
-- **Acceso:** Abre o ficheiro `torneo.html` directamente no navegador ou accede ao enlace principal publicado en GitHub Pages.
+- **Acceso:** Abre o ficheiro `torneo_hockey_maestro.html` directamente no navegador ou accede ao enlace principal publicado en GitHub Pages.
 - **Funcionalidades:**
     - Engadir, eliminar e gardar equipos e os seus escudos (mediante URL).
     - Xerar calendarios de partidos a dobre volta por xornadas.
@@ -26,7 +26,7 @@ A ferramenta ten dous modos de uso principais, que se controlan a través da URL
 Un modo de só lectura ideal para compartir os resultados.
 
 - **Acceso:** Engade `?modo=ver` ao final da URL.
-  - Exemplo: `https://o-teu-usuario.github.io/o-teu-repositorio/torneo.html?modo=ver`
+  - Exemplo: `https://o-teu-usuario.github.io/o-teu-repositorio/torneo_hockey_maestro.html?modo=ver`
 - **Funcionalidades:**
     - Ver todos os equipos, xornadas, resultados e clasificacións.
     - Os controis de edición están ocultos e desactivados.
@@ -40,7 +40,7 @@ O ciclo de traballo para manter o torneo actualizado é o seguinte:
 1.  **Editar Localmente:** Abre o teu enlace de xestión (sen `?modo=ver`). Introduce os novos resultados dos partidos. Os datos gárdanse automaticamente no teu navegador (`LocalStorage`).
 2.  **Exportar Datos:** Na sección "Xestión de datos", preme o botón **`📤 Exportar`**. Isto copiará o estado actual de todo o torneo no teu portapapeis.
 3.  **Actualizar en GitHub:**
-    - Edita o ficheiro `torneo.html` directamente en GitHub.
+    - Edita o ficheiro `torneo_hockey_maestro.html` directamente en GitHub.
     - Busca a liña `let state = {};`.
     - Substitúe o contido de `{}` polo texto que acabas de copiar.
     - Garda os cambios ("Commit changes").
