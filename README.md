@@ -51,7 +51,7 @@ Ao facelo, a versión pública da páxina quedará actualizada ao instante para 
 
 O proxecto está deseñado para ser o máis sinxelo posible, contendo todo nun único arquivo:
 
-- **`torneo.html`**: Contén a estrutura HTML, os estilos CSS e toda a lóxica JavaScript.
+- **`torneo_hockey_maestro.html`**: Contén a estrutura HTML, os estilos CSS e toda a lóxica JavaScript.
 
 ## 💡 Posibles Melloras Futuras
 
