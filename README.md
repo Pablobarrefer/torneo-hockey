@@ -33,34 +33,36 @@ Un modo de só lectura ideal para compartir os resultados.
     - Permite usar os filtros para visualizar por ciclo ou por curso.
     - Permite activar o "Modo Proxector".
 
-## 🛠️ Fluxo de Traballo para o Administrador
+    
+## 🔄 Flujo de Trabajo: Actualización de Resultados
 
-O ciclo de traballo para manter o torneo actualizado é o seguinte:
+Este proyecto utiliza un sistema de **datos externos** para separar la gestión del torneo de la visualización pública. De esta forma, los alumnos pueden consultar los resultados sin riesgo de modificar la base de datos.
 
-1.  **Editar Localmente:** Abre o teu enlace de xestión (sen `?modo=ver`). Introduce os novos resultados dos partidos. Os datos gárdanse automaticamente no teu navegador (`LocalStorage`).
-2.  **Exportar Datos:** Na sección "Xestión de datos", preme o botón **`📤 Exportar`**. Isto copiará o estado actual de todo o torneo no teu portapapeis.
-3.  **Actualizar en GitHub:**
-    - Edita o ficheiro `torneo_hockey_maestro.html` directamente en GitHub.
-    - Busca a liña `let state = {};`.
-    - Substitúe o contido de `{}` polo texto que acabas de copiar.
-    - Garda os cambios ("Commit changes").
+### 1. Gestión del Torneo (Rol del Profesor)
+Para introducir resultados, crear jornadas o modificar equipos:
+1. Abre el archivo `index.html` en tu ordenador (o accede a tu versión de gestión privada).
+2. Realiza los cambios necesarios (goles, actas, fair play, etc.).
+3. Ve a la sección **⚙️ Xestión de datos**.
+4. Haz clic en el botón **"⬇️ Descargar JSON"**.
+5. Se descargará un archivo (ej: `torneo_balaidos_2025.json`).
+6. **IMPORTANTE:** Renombra ese archivo a **`datos.json`** (todo en minúsculas).
 
-Ao facelo, a versión pública da páxina quedará actualizada ao instante para que todos poidan ver os novos resultados.
+### 2. Publicación de Datos (Subida a GitHub)
+Para que los alumnos vean los cambios:
+1. Ve a la página principal de este repositorio en GitHub.
+2. Haz clic en el botón **Add file** > **Upload files**.
+3. Arrastra el archivo **`datos.json`** que acabas de renombrar.
+4. Escribe un mensaje breve en "Commit changes" (ej: *"Resultados jornada 3"*).
+5. Pulsa el botón verde **Commit changes**.
 
-## 🎨 Estrutura do Proxecto
+*GitHub actualizará automáticamente la página en unos segundos.*
 
-O proxecto está deseñado para ser o máis sinxelo posible, contendo todo nun único arquivo:
+### 3. Visualización (Rol del Alumno)
+Los alumnos deben acceder a través del siguiente enlace para ver la clasificación y los partidos en modo "solo lectura":
 
-- **`torneo_hockey_maestro.html`**: Contén a estrutura HTML, os estilos CSS e toda a lóxica JavaScript.
+> **https://[TU-USUARIO].github.io/[NOMBRE-DEL-REPO]/index.html?modo=ver**
 
-## 💡 Posibles Melloras Futuras
+* **Nota:** El parámetro `?modo=ver` oculta los botones de administración para una experiencia más limpia.
+* **Nota 2:** Si los cambios no aparecen inmediatamente, pide a los alumnos que refresquen la página. El sistema está configurado para evitar que el móvil guarde datos antiguos.
 
-Este proxecto pode seguir medrando. Algunhas ideas para o futuro son:
 
-- Implementar criterios de desempate avanzados (enfrontamento directo).
-- Engadir unha sección para o "Máximo Goleador" ou "MVP da Xornada".
-- Crear efectos visuais para celebrar os campións.
-
----
-
-*Proxecto creado coa axuda de diferentes IA para o CEIP Balaídos.*
