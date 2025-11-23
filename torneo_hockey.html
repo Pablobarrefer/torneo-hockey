@@ -266,13 +266,36 @@ document.addEventListener('DOMContentLoaded', function() {
       BASE_EDITION_NUM: 19,
       isViewMode: isViewMode
     },
-    state: {},
+    // Aquí pegas tu JSON. Si está vacío es {}, si tiene datos se verán así:
+state: {},
     
     initEmptyState: function() {
       this.state = { year: '2025–2026', groups: {}, playoffs: { '2ciclo': null, '3ciclo': null }, filter: 'all', collapsedGroups: {}, ligaHidden: false };
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
+      // MODIFICACIÓN: Si ya pegué datos en el código (state no está vacío), úsalos y no busques en localStorage.
+      if (this.state && this.state.groups && Object.keys(this.state.groups).length > 0) {
+        console.log("Usando datos incrustados en el HTML (Modo GitHub)");
+        if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
+        return; 
+      }
+
+      // Si el código está vacío (versión del profe), busca en LocalStorage
+      const raw = localStorage.getItem(this.config.STORAGE_KEY);
+      if (raw) {
+        try { this.state = JSON.parse(raw); } 
+        catch (e) { this.initEmptyState(); }
+      } else {
+        this.initEmptyState();
+      }
+      
+      // Inicializaciones de seguridad
+      Object.keys(this.config.GROUPS).forEach(g => { if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] }; });
+      if (!this.state.filter) this.state.filter = 'all';
+      if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
+      if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
+    },
       const raw = localStorage.getItem(this.config.STORAGE_KEY);
       if (raw) {
         try { this.state = JSON.parse(raw); } 
