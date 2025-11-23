@@ -273,17 +273,33 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
-      const raw = localStorage.getItem(this.config.STORAGE_KEY);
-      if (raw) {
-        try { this.state = JSON.parse(raw); } 
-        catch (e) { this.initEmptyState(); }
-      } else {
-        this.initEmptyState();
-      }
-      Object.keys(this.config.GROUPS).forEach(g => { if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] }; });
-      if (!this.state.filter) this.state.filter = 'all';
-      if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
-      if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
+      // Intenta cargar datos.json externo primero
+      return fetch('datos.json?v=' + new Date().getTime())
+        .then(response => {
+          if (!response.ok) throw new Error("No externo");
+          return response.json();
+        })
+        .then(data => {
+          console.log("✅ Datos cargados de GitHub");
+          this.state = data;
+        })
+        .catch(() => {
+          // Si falla, usa la memoria del navegador
+          const raw = localStorage.getItem(this.config.STORAGE_KEY);
+          if (raw) {
+            try { this.state = JSON.parse(raw); } 
+            catch (e) { this.initEmptyState(); }
+          } else {
+            this.initEmptyState();
+          }
+        })
+        .finally(() => {
+          // Asegurar estructura
+          Object.keys(this.config.GROUPS).forEach(g => { if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] }; });
+          if (!this.state.filter) this.state.filter = 'all';
+          if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
+          if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
+        });
     },
     saveState: function() {
       if(this.config.isViewMode) return;
@@ -1571,26 +1587,27 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     init: function() {
-      this.loadState();
-      this.loadTheme();
-      document.getElementById('schoolYear').value = this.state.year || '2025–2026';
-      
-      if(this.config.isViewMode) {
-        document.body.classList.add('view-mode');
-        document.getElementById('subtitle').textContent = 'Modo visualización';
-        // Ocultar selector de colores en modo ver
-        document.getElementById('btn-color-picker').style.display = 'none';
-      }
-      
-      this.renderAll();
-      this.bindEvents();
-      
-      if (!this.config.isViewMode) {
-        this.checkAutoPlayoffs('2ciclo');
-        this.checkAutoPlayoffs('3ciclo');
-      }
+      // Espera a que loadState termine (sea archivo o memoria)
+      this.loadState().then(() => {
+        this.loadTheme();
+        document.getElementById('schoolYear').value = this.state.year || '2025–2026';
+        
+        if(this.config.isViewMode) {
+          document.body.classList.add('view-mode');
+          document.getElementById('subtitle').textContent = 'Modo visualización';
+          const cp = document.getElementById('btn-color-picker');
+          if(cp) cp.style.display = 'none';
+        }
+        
+        this.renderAll();
+        this.bindEvents();
+        
+        if (!this.config.isViewMode) {
+          this.checkAutoPlayoffs('2ciclo');
+          this.checkAutoPlayoffs('3ciclo');
+        }
+      });
     }
-  };
   
   torneoApp.init();
 });
