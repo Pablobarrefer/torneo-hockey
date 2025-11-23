@@ -1608,8 +1608,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
     }
-  
-  torneoApp.init();
+  }; // <--- ¡ESTO ES LO QUE FALTABA! (Cierre del objeto)
+
+  window.torneoApp.init();
 });
 </script>
 </body>
