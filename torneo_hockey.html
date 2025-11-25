@@ -273,6 +273,11 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
+ // --- NUEVO: Si entras en modo admin, ignora el archivo y vete a la memoria local ---
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('modo') === 'admin') return Promise.reject("Modo Admin");
+      // ----------------------------------------------------------------------------------
+
       // Intenta cargar datos.json externo primero
       return fetch('datos.json?v=' + new Date().getTime())
         .then(response => {
@@ -284,7 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
           this.state = data;
         })
         .catch(() => {
-          // Si falla, usa la memoria del navegador
+          // Si falla (o es MODO ADMIN), usa la memoria del navegador
+          console.log("💾 Cargando desde LocalStorage (Modo Edición)");
           const raw = localStorage.getItem(this.config.STORAGE_KEY);
           if (raw) {
             try { this.state = JSON.parse(raw); } 
