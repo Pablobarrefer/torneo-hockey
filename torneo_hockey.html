@@ -273,24 +273,27 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
- // --- NUEVO: Si entras en modo admin, ignora el archivo y vete a la memoria local ---
+  // 1. Detectar si estamos en modo admin
       const params = new URLSearchParams(window.location.search);
-      if (params.get('modo') === 'admin') return Promise.reject("Modo Admin");
-      // ----------------------------------------------------------------------------------
+      const isAdmin = params.get('modo') === 'admin';
 
-      // Intenta cargar datos.json externo primero
-      return fetch('datos.json?v=' + new Date().getTime())
-        .then(response => {
-          if (!response.ok) throw new Error("No externo");
-          return response.json();
-        })
-        .then(data => {
-          console.log("✅ Datos cargados de GitHub");
-          this.state = data;
-        })
+      // 2. Definir qué intentar: ¿Fallo a propósito (Admin) o Carga de GitHub?
+      const dataPromise = isAdmin 
+        ? Promise.reject("Modo Admin: Saltando carga externa") 
+        : fetch('datos.json?v=' + new Date().getTime())
+            .then(response => {
+              if (!response.ok) throw new Error("No se encontró datos.json");
+              return response.json();
+            })
+            .then(data => {
+              console.log("✅ Datos cargados de GitHub");
+              this.state = data;
+            });
+
+      // 3. Ejecutar y, si falla (o es Admin), usar LocalStorage
+      return dataPromise
         .catch(() => {
-          // Si falla (o es MODO ADMIN), usa la memoria del navegador
-          console.log("💾 Cargando desde LocalStorage (Modo Edición)");
+          console.log("💾 Usando LocalStorage (Modo Admin o sin archivo)");
           const raw = localStorage.getItem(this.config.STORAGE_KEY);
           if (raw) {
             try { this.state = JSON.parse(raw); } 
@@ -300,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         })
         .finally(() => {
-          // Asegurar estructura
+          // Asegurar estructura de datos siempre
           Object.keys(this.config.GROUPS).forEach(g => { if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] }; });
           if (!this.state.filter) this.state.filter = 'all';
           if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
