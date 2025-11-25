@@ -123,6 +123,7 @@
 </style>
 </head>
 <body data-theme="blue">
+<button onclick="var d=localStorage.getItem('ceip_balaidos_torneo_definitivo_fix_v2'); if(d){navigator.clipboard.writeText(d).then(()=>alert('¡DATOS COPIADOS! Pégalos en un email o notas')).catch(()=>prompt('Copia esto manualmente:', d))}else{alert('La memoria está vacía o borrada 😢')}" style="position:fixed;top:10px;left:10px;z-index:99999;font-size:20px;padding:20px;background:red;color:white;border:4px solid white;">🆘 RESCATAR DATOS</button>
 <button id="btn-color-picker" class="projector-btn" title="Cambiar colores">🎨</button>
 <div id="color-picker" class="color-picker">
   <h4>🎨 Colores do Torneo</h4>
