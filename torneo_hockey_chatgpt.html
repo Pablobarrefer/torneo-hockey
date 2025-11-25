@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Torneo Hockey Escolar</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { padding-top: 70px; font-family: Arial, sans-serif; }
+    .bye-badge { font-weight:700; color:#fff; background:#6c757d; padding:0.15rem 0.5rem; border-radius:0.25rem; }
+    .admin-note { font-size:0.9rem; color:#6c757d; }
+    .card-controls { gap:8px; }
+    .file-input { display:inline-block; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Torneo Hockey</a>
+      <div class="d-flex align-items-center">
+        <span id="modeBadge" class="badge bg-secondary me-3">Modo: ver</span>
+        <a id="openAdmin" class="btn btn-sm btn-outline-light me-2" href="?modo=admin">Abrir admin</a>
+        <a id="openView" class="btn btn-sm btn-outline-light" href="?modo=ver">Abrir ver</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <!-- ADMIN TOOLS -->
+    <div id="adminTools" class="card mb-3" style="display:none;">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="card-title mb-1">Herramientas Administrador</h5>
+          <div class="admin-note">En este modo puedes editar marcadores. Los cambios se guardan en tu dispositivo (localStorage) y no serán sobrescritos por datos.json remoto salvo que importes manualmente un JSON.</div>
+        </div>
+        <div class="d-flex card-controls">
+          <label class="btn btn-outline-primary mb-0 file-input">
+            <input id="fileImport" type="file" accept=".json" style="display:none">
+            Cargar simulación
+          </label>
+          <button id="btnExportJSON" class="btn btn-outline-success">Exportar JSON</button>
+          <button id="btnResetLocal" class="btn btn-outline-danger">Borrar datos locales</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aviso BYE si corresponde -->
+    <div id="byeAlert" class="alert alert-info" style="display:none;"></div>
+
+    <!-- Contenedor principal -->
+    <div id="torneoContainer"></div>
+
+    <footer class="mt-4">
+      <small class="text-muted">Si quieres subir cambios permanentes a GitHub: usa <code>Exportar JSON</code> y sube el archivo resultante como <code>datos.json</code> en tu repo (o hazlo manualmente desde Git).</small>
+    </footer>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Detección de modo
+    const urlParams = new URLSearchParams(window.location.search);
+    const MODO = urlParams.get("modo") === "admin" ? "admin" : "ver";
+    document.getElementById("modeBadge").textContent = "Modo: " + MODO;
+
+    // localStorage helpers
+    function getLocalData() {
+      const raw = localStorage.getItem("torneoData");
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch (e) { console.error("JSON local corrupto", e); return null; }
+    }
+
+    function saveLocalData(obj) { localStorage.setItem("torneoData", JSON.stringify(obj)); }
+    function clearLocalData() { localStorage.removeItem("torneoData"); }
+
+    // Cargar datos.json si no hay local
+    async function loadInitialData() {
+      const local = getLocalData();
+      if (local) return local;
+      try {
+        const resp = await fetch("datos.json",{cache:"no-store"});
+        if(!resp.ok) throw new Error("HTTP "+resp.status);
+        const json = await resp.json();
+        saveLocalData(json);
+        return json;
+      } catch(err){
+        console.error("Error cargando datos.json:",err);
+        return { jornadas: [], equipos: [] };
+      }
+    }
+
+    // BYE automático
+    function ensureBye(equipos){
+      if(!Array.isArray(equipos)) return equipos;
+      if(equipos.length%2===1){
+        const exists = equipos.some(e => (typeof e==="string" && e.toLowerCase().includes("bye"))||(e.nombre&&e.nombre.toLowerCase().includes("bye")));
+        if(!exists){
+          equipos.push("BYE");
+          return {addedBye:true,equipos};
+        }
+      }
+      return {addedBye:false,equipos};
+    }
+
+    // Exportar JSON
+    function exportarJSON(){
+      const data=getLocalData()||{jornadas:[],equipos:[]};
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url;a.download="torneo_hockey_export_"+Date.now()+".json";a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Importar JSON (solo admin)
+    function handleFileImport(file){
+      if(!file) return;
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        try{
+          const imported=JSON.parse(e.target.result);
+          if(!imported||typeof imported!=="object") throw new Error("JSON no válido");
+          if(!confirm("Vas a importar un JSON que reemplazará los datos locales. ¿Continuar?")) return;
+          saveLocalData(imported);
+          alert("Importación completa. La página se recargará para aplicar cambios.");
+          location.reload();
+        }catch(err){
+          console.error("Error importando JSON:",err);
+          alert("El archivo JSON no es válido.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Guardar cambios
+    function guardarCambios(data){
+      if(MODO!=="admin") return;
+      saveLocalData(data);
+      alert("Cambios guardados en localStorage.");
+    }
+
+    // Render de la app
+    function initPage(data,modo,onSave){
+      const container=document.getElementById("torneoContainer");
+      container.innerHTML="";
+
+      data.jornadas=data.jornadas||[];
+      data.equipos=data.equipos||[];
+
+      const resBye=ensureBye(data.equipos);
+      if(resBye.addedBye){
+        document.getElementById("byeAlert").style.display="block";
+        document.getElementById("byeAlert").innerHTML=`<strong>Se ha añadido automáticamente el equipo <span class="bye-badge">BYE</span> porque había un número impar de equipos.</strong>`;
+        data.equipos=resBye.equipos;
+      }else{ document.getElementById("byeAlert").style.display="none"; }
+
+      // Equipos
+      const equiposCard=document.createElement("div");
+      equiposCard.className="card mb-3";
+      equiposCard.innerHTML=`<div class="card-body"><h5 class="card-title">Equipos</h5><div id="equiposList" class="d-flex flex-wrap gap-2"></div></div>`;
+      container.appendChild(equiposCard);
+      const equiposList=equiposCard.querySelector("#equiposList");
+      data.equipos.forEach((eq,idx)=>{
+        const name=typeof eq==="string"?eq:(eq.nombre||("Equipo "+(idx+1)));
+        const span=document.createElement("span");
+        span.className="badge bg-primary"; span.textContent=name;
+        equiposList.appendChild(span);
+      });
+
+      // Jornadas
+      const jornadasCard=document.createElement("div");
+      jornadasCard.className="card";
+      jornadasCard.innerHTML=`<div class="card-body"><h5 class="card-title">Jornadas</h5><div id="jornadasList"></div></div>`;
+      container.appendChild(jornadasCard);
+      const jl=jornadasCard.querySelector("#jornadasList");
+      if(!Array.isArray(data.jornadas)||data.jornadas.length===0){
+        jl.innerHTML=`<div class="alert alert-warning mb-0">No hay jornadas definidas.</div>`;
+      }else{
+        data.jornadas.forEach((j,ji)=>{
+          const jDiv=document.createElement("div");
+          jDiv.className="mb-3 p-2 border rounded";
+          jDiv.innerHTML=`<h6>Jornada ${ji+1}</h6>`;
+          (j.partidos||[]).forEach((p,pi)=>{
+            const row=document.createElement("div");
+            row.className="d-flex align-items-center gap-2 mb-2";
+
+            const name1=document.createElement("div"); name1.style.minWidth="160px"; name1.textContent=p.equipo1||"EquipoA";
+            const name2=document.createElement("div"); name2.style.minWidth="160px"; name2.textContent=p.equipo2||"EquipoB";
+
+            let g1Elem,g2Elem;
+            if(modo==="admin"){
+              g1Elem=document.createElement("input"); g1Elem.type="number"; g1Elem.value=p.goles1!=null?p.goles1:0; g1Elem.className="form-control form-control-sm"; g1Elem.style.width="70px";
+              g2Elem=document.createElement("input"); g2Elem.type="number"; g2Elem.value=p.goles2!=null?p.goles2:0; g2Elem.className="form-control form-control-sm"; g2Elem.style.width="70px";
+            }else{
+              g1Elem=document.createElement("div"); g1Elem.textContent=p.goles1!=null?p.goles1:"-";
+              g2Elem=document.createElement("div"); g2Elem.textContent=p.goles2!=null?p.goles2:"-";
+            }
+
+            const controls=document.createElement("div"); controls.className="ms-auto d-flex gap-2";
+            if(modo==="admin"){
+              const btnSave=document.createElement("button");
+              btnSave.className="btn btn-sm btn-outline-primary"; btnSave.textContent="Guardar partido";
+              btnSave.onclick=()=>{ p.goles1=parseInt(g1Elem.value||0,10); p.goles2=parseInt(g2Elem.value||0,10); onSave(data); initPage(data,modo,onSave); };
+              controls.appendChild(btnSave);
+            }
+
+            row.appendChild(name1); row.appendChild(g1Elem); row.appendChild(document.createTextNode("–")); row.appendChild(g2Elem); row.appendChild(name2); row.appendChild(controls);
+            jDiv.appendChild(row);
+          });
+          jl.appendChild(jDiv);
+        });
+      }
+
+      if(modo==="admin"){
+        const saveAllBtn=document.createElement("button");
+        saveAllBtn.className="btn btn-success mt-3"; saveAllBtn.textContent="Guardar todo (local)";
+        saveAllBtn.onclick=()=>{ onSave(data); };
+        container.appendChild(saveAllBtn);
+      }
+    }
+
+    // Inicialización
+    async function iniciar(){
+      if(MODO==="admin") document.getElementById("adminTools").style.display="block";
+      else document.getElementById("adminTools").style.display="none";
+
+      document.getElementById("btnExportJSON").addEventListener("click",exportarJSON);
+      document.getElementById("fileImport").addEventListener("change",ev=>{if(MODO==="admin") handleFileImport(ev.target.files[0]); else alert("Solo admin puede importar.");});
+      document.getElementById("btnResetLocal").addEventListener("click",()=>{if(confirm("Borrarás los datos guardados en localStorage. ¿Continuar?")){clearLocalData(); alert("Datos locales borrados. Se recargará la página."); location.reload();}});
+
+      const data=await loadInitialData();
+      window.TORNEO_DATA=structuredClone(data);
+      initPage(window.TORNEO_DATA,MODO,guardarCambios);
+    }
+
+    window.addEventListener("DOMContentLoaded",iniciar);
+  </script>
+</body>
+</html>
