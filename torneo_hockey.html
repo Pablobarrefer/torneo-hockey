@@ -273,28 +273,35 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
-  // Si hay datos en localStorage: úsalos (no los sobreescribas automáticamente).
-      const raw = localStorage.getItem(this.config.STORAGE_KEY);
-      if (raw) {
-        try { this.state = JSON.parse(raw); }
-        catch (e) { this.initEmptyState(); }
-      } else {
-        // No hay nada en local: inicializa y, si estamos en modo "ver", intenta traer datos remotos
-        this.initEmptyState();
-        if (this.config.isViewMode) {
-          // Intentamos traer datos remotos, pero **solo** para poblar/combinar metadatos,
-          // sin borrar resultados que pudieran guardarse localmente en el futuro.
-          this.fetchAndMergeRemote();
+  // Devolvemos una Promesa para que 'init' no se rompa
+      return new Promise((resolve) => {
+        
+        // 1. Intentar leer LocalStorage
+        const raw = localStorage.getItem(this.config.STORAGE_KEY);
+        if (raw) {
+          try { this.state = JSON.parse(raw); }
+          catch (e) { this.initEmptyState(); }
+        } else {
+          // No hay nada en local: inicializa
+          this.initEmptyState();
+          
+          // Si estamos en modo ver, intentamos traer datos remotos en segundo plano
+          if (this.config.isViewMode) {
+            this.fetchAndMergeRemote();
+          }
         }
-      }
 
-      // Asegurar estructura mínima
-      Object.keys(this.config.GROUPS).forEach(g => {
-        if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] };
+        // 2. Asegurar estructura mínima
+        Object.keys(this.config.GROUPS).forEach(g => {
+          if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] };
+        });
+        if (!this.state.filter) this.state.filter = 'all';
+        if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
+        if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
+
+        // 3. ¡Terminamos! Avisamos a init de que puede continuar
+        resolve();
       });
-      if (!this.state.filter) this.state.filter = 'all';
-      if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
-      if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
     },
 
     // Petición controlada a datos.json que **fusiona** solo metadatos no destructivos.
