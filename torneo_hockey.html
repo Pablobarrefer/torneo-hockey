@@ -273,35 +273,80 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
-  // Devolvemos una Promesa para que 'init' no se rompa
-      return new Promise((resolve) => {
-        
-        // 1. Intentar leer LocalStorage
-        const raw = localStorage.getItem(this.config.STORAGE_KEY);
-        if (raw) {
-          try { this.state = JSON.parse(raw); }
-          catch (e) { this.initEmptyState(); }
-        } else {
-          // No hay nada en local: inicializa
-          this.initEmptyState();
-          
-          // Si estamos en modo ver, intentamos traer datos remotos en segundo plano
-          if (this.config.isViewMode) {
-            this.fetchAndMergeRemote();
-          }
+  return new Promise((resolve) => {
+        // --- ESTRATEGIA 1: MODO VER (ALUMNOS) ---
+        // Prioridad: 1. GitHub (datos.json) | 2. LocalStorage (si falla internet)
+        if (this.config.isViewMode) {
+          // El truco "?v=" + Date.now() obliga a descargar una versión nueva siempre
+          fetch('datos.json?v=' + Date.now())
+            .then(response => {
+              if (!response.ok) throw new Error("Fallo al cargar datos.json");
+              return response.json();
+            })
+            .then(data => {
+              console.log("🌍 [Modo Ver] Datos actualizados desde GitHub");
+              this.state = data;
+              this.sanitizeState(); 
+              resolve();
+            })
+            .catch(err => {
+              console.warn("⚠️ [Modo Ver] Fallo GitHub, usando caché local:", err);
+              this.loadFromLocal(); 
+              this.sanitizeState();
+              resolve();
+            });
+            
+          return; // Terminamos aquí si es modo ver
         }
 
-        // 2. Asegurar estructura mínima
-        Object.keys(this.config.GROUPS).forEach(g => {
-          if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] };
-        });
-        if (!this.state.filter) this.state.filter = 'all';
-        if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
-        if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
-
-        // 3. ¡Terminamos! Avisamos a init de que puede continuar
-        resolve();
+        // --- ESTRATEGIA 2: MODO ADMIN (PROFESOR) ---
+        // Prioridad: 1. LocalStorage (trabajo en curso) | 2. GitHub (si está vacío)
+        const hasLocalData = this.loadFromLocal();
+        
+        if (!hasLocalData) {
+          // Si el profe tiene el local vacío, intentamos traer lo de GitHub para empezar
+          fetch('datos.json?v=' + Date.now())
+            .then(resp => resp.ok ? resp.json() : null)
+            .then(data => {
+              if (data) {
+                console.log("📥 [Admin] Importando datos iniciales de GitHub");
+                this.state = data;
+              }
+            })
+            .catch(() => console.log("🆕 [Admin] Empezando de cero"))
+            .finally(() => {
+              this.sanitizeState();
+              resolve();
+            });
+        } else {
+          console.log("💾 [Admin] Usando datos locales");
+          this.sanitizeState();
+          resolve();
+        }
       });
+    },
+
+    // Funciones auxiliares nuevas
+    loadFromLocal: function() {
+      const raw = localStorage.getItem(this.config.STORAGE_KEY);
+      if (raw) {
+        try { 
+          this.state = JSON.parse(raw); 
+          return true;
+        } catch (e) { return false; }
+      }
+      this.initEmptyState();
+      return false;
+    },
+
+    sanitizeState: function() {
+      // Asegurar que la estructura no rompa la web
+      Object.keys(this.config.GROUPS).forEach(g => {
+        if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] };
+      });
+      if (!this.state.filter) this.state.filter = 'all';
+      if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
+      if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
     },
 
     // Petición controlada a datos.json que **fusiona** solo metadatos no destructivos.
