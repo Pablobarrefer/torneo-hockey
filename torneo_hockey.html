@@ -221,6 +221,7 @@
             <button id="btn-export-excel" class="warn">📊 Exportar Excel</button>
             <button id="btn-download" class="warn">⬇️ Descargar JSON</button>
             <button id="btn-show-import">📥 Importar</button>
+            <button id="btn-sync" class="warn">☁️ Cargar de GitHub</button>
             <button id="btn-reset" class="danger">🗑️ Reiniciar</button>
           </div>
           <div id="import-area" style="display:none; margin-top:8px">
@@ -339,6 +340,24 @@ document.addEventListener('DOMContentLoaded', function() {
       return false;
     },
 
+syncFromGithub: function() {
+      if(!confirm("⚠️ ATENCIÓN: Isto borrará os datos que tes agora en pantalla e cargará os últimos subidos a GitHub.\n\nEstás seguro?")) return;
+      
+      fetch('datos.json?v=' + Date.now())
+        .then(r => {
+          if(!r.ok) throw new Error("No se pudo conectar con GitHub");
+          return r.json();
+        })
+        .then(data => {
+          this.state = data;
+          this.sanitizeState();
+          this.saveState(); // Guardamos en local lo que acabamos de bajar
+          this.renderAll();
+          this.showBanner("✅ Datos sincronizados coa nube!");
+        })
+        .catch(e => alert("Erro: " + e.message));
+    },
+    
     sanitizeState: function() {
       // Asegurar que la estructura no rompa la web
       Object.keys(this.config.GROUPS).forEach(g => {
@@ -1644,6 +1663,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('btn-cancel-import').addEventListener('click', () => this.hideImport());
       document.getElementById('btn-toggle-all-liga').addEventListener('click', () => this.toggleAllLiga());
       document.getElementById('btn-color-picker').addEventListener('click', () => this.toggleColorPicker());
+      document.getElementById('btn-sync').addEventListener('click', () => this.syncFromGithub());
       
       // Event listeners para cambiar tema
       document.querySelectorAll('.color-option').forEach(option => {
