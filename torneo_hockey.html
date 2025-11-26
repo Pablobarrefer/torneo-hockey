@@ -273,42 +273,107 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
     loadState: function() {
-  // 1. Detectar si estamos en modo admin
-      const params = new URLSearchParams(window.location.search);
-      const isAdmin = params.get('modo') === 'admin';
+  // Si hay datos en localStorage: úsalos (no los sobreescribas automáticamente).
+      const raw = localStorage.getItem(this.config.STORAGE_KEY);
+      if (raw) {
+        try { this.state = JSON.parse(raw); }
+        catch (e) { this.initEmptyState(); }
+      } else {
+        // No hay nada en local: inicializa y, si estamos en modo "ver", intenta traer datos remotos
+        this.initEmptyState();
+        if (this.config.isViewMode) {
+          // Intentamos traer datos remotos, pero **solo** para poblar/combinar metadatos,
+          // sin borrar resultados que pudieran guardarse localmente en el futuro.
+          this.fetchAndMergeRemote();
+        }
+      }
 
-      // 2. Definir qué intentar: ¿Fallo a propósito (Admin) o Carga de GitHub?
-      const dataPromise = isAdmin 
-        ? Promise.reject("Modo Admin: Saltando carga externa") 
-        : fetch('datos.json?v=' + new Date().getTime())
-            .then(response => {
-              if (!response.ok) throw new Error("No se encontró datos.json");
-              return response.json();
-            })
-            .then(data => {
-              console.log("✅ Datos cargados de GitHub");
-              this.state = data;
+      // Asegurar estructura mínima
+      Object.keys(this.config.GROUPS).forEach(g => {
+        if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] };
+      });
+      if (!this.state.filter) this.state.filter = 'all';
+      if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
+      if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
+    },
+
+    // Petición controlada a datos.json que **fusiona** solo metadatos no destructivos.
+    // No sobreescribe las rondas/partidos si ya existen resultados locales.
+    fetchAndMergeRemote: function(force = false) {
+      // Si ya tenemos datos locales y no forzamos, no vamos a pisar las rondas/partidos.
+      // Pero intentaremos traer escudos/fotos/nombres para completar la UI.
+      try {
+        fetch('datos.json', { cache: 'no-store' })
+          .then(resp => {
+            if (!resp.ok) throw new Error('No se pudo obtener datos.json desde el servidor');
+            return resp.json();
+          })
+          .then(remote => {
+            if (!remote || typeof remote !== 'object') return;
+
+            // Para cada grupo, copiamos solo lo necesario:
+            Object.keys(this.config.GROUPS).forEach(g => {
+              const localG = this.state.groups[g] || { teams: [], rounds: [] };
+              const remoteG = (remote.groups && remote.groups[g]) ? remote.groups[g] : null;
+              if (!remoteG) {
+                // no hay nada remoto para este grupo
+                this.state.groups[g] = localG;
+                return;
+              }
+
+              // Teams: si falta equipo local, copia entero; si existe, actualiza metadatos no destructivos.
+              localG.teams = localG.teams || [];
+              remoteG.teams = remoteG.teams || [];
+              for (let i = 0; i < remoteG.teams.length; i++) {
+                const rTeam = remoteG.teams[i];
+                if (!localG.teams[i]) {
+                  // no existía localmente: copia desde remoto
+                  localG.teams[i] = rTeam;
+                } else {
+                  // existe localmente: actualizar solo campos de presentación
+                  // (mantén nombre si el local ya tiene uno, actualiza escudo/foto si vienen del remoto)
+                  if (!localG.teams[i].name && rTeam.name) localG.teams[i].name = rTeam.name;
+                  if (rTeam.shield) localG.teams[i].shield = rTeam.shield;
+                  if (rTeam.photo) localG.teams[i].photo = rTeam.photo;
+                  // puedes añadir aquí otros campos seguros a sincronizar
+                }
+              }
+
+              // Rounds: si en local NO hay rondas (o están vacías) copiamos las remotas.
+              // Si YA hay rondas locales con resultados, NO las sobreescribimos (evita borrar goles).
+              const localHasResults = (localG.rounds || []).flatMap(r => r.matches || [])
+                .some(m => m.scoreA !== null || m.scoreB !== null);
+              if (!localG.rounds || localG.rounds.length === 0) {
+                localG.rounds = remoteG.rounds ? JSON.parse(JSON.stringify(remoteG.rounds)) : [];
+              } else if (force && !localHasResults) {
+                // si el caller fuerza la actualización y no hay resultados, podemos reemplazar
+                localG.rounds = remoteG.rounds ? JSON.parse(JSON.stringify(remoteG.rounds)) : localG.rounds;
+              }
+              this.state.groups[g] = localG;
             });
 
-      // 3. Ejecutar y, si falla (o es Admin), usar LocalStorage
-      return dataPromise
-        .catch(() => {
-          console.log("💾 Usando LocalStorage (Modo Admin o sin archivo)");
-          const raw = localStorage.getItem(this.config.STORAGE_KEY);
-          if (raw) {
-            try { this.state = JSON.parse(raw); } 
-            catch (e) { this.initEmptyState(); }
-          } else {
-            this.initEmptyState();
-          }
-        })
-        .finally(() => {
-          // Asegurar estructura de datos siempre
-          Object.keys(this.config.GROUPS).forEach(g => { if (!this.state.groups[g]) this.state.groups[g] = { teams: [], rounds: [] }; });
-          if (!this.state.filter) this.state.filter = 'all';
-          if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
-          if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
-        });
+            // Year / otros campos generales: solo si faltan localmente
+            if ((!this.state.year || this.state.year === '') && remote.year) this.state.year = remote.year;
+            if (!this.state.playoffs && remote.playoffs) this.state.playoffs = remote.playoffs;
+
+            // Guardar el resultado fusionado en localStorage (no borraremos datos de los usuarios)
+            try {
+              localStorage.setItem(this.config.STORAGE_KEY, JSON.stringify(this.state));
+              this.showBanner('Datos cargados/fusionados desde servidor');
+            } catch (e) {
+              console.warn('No se pudo guardar en localStorage tras merge:', e);
+            }
+
+            // Render opcional si ya estamos en la página
+            try { this.renderAll(); } catch (e) { /* ignorar si aún no está todo ligado */ }
+          })
+          .catch(err => {
+            // fallo al traer remoto: silencioso en vista normal
+            console.warn('fetchAndMergeRemote:', err);
+          });
+      } catch (e) {
+        console.warn('fetchAndMergeRemote fallo:', e);
+      }
     },
     saveState: function() {
       if(this.config.isViewMode) return;
@@ -1327,16 +1392,29 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     
     downloadJSON: function() { 
-      const b = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' }); 
-      const u = URL.createObjectURL(b); 
-      const a = document.createElement('a'); 
-      a.href = u; 
-      a.download = `torneo_balaidos_${(this.state.year || 'ano').replace(/[^0-9–-]/g, '')}.json`; 
-      document.body.appendChild(a); 
-      a.click(); 
-      a.remove(); 
-      URL.revokeObjectURL(u); 
-    },
+      
+  // 1️⃣ Clonar el estado actual
+  const output = JSON.parse(JSON.stringify(this.state));
+
+  // 2️⃣ Añadir versión automática como timestamp
+  output.version = Date.now();
+
+  // 3️⃣ Convertir a JSON con sangrado
+  const json = JSON.stringify(output, null, 2);
+
+  // 4️⃣ Crear Blob y descargar archivo
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+
+  a.href = url;
+  a.download = `datos.json`;   // <-- Nombre fijo esperado para modo VER
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+},
     
     exportToExcel: function() {
       // Crear CSV (formato compatible con Excel)
