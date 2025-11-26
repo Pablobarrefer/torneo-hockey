@@ -223,6 +223,9 @@
             <button id="btn-show-import">📥 Importar</button>
             <button id="btn-sync" class="warn">☁️ Cargar de GitHub</button>
             <button id="btn-reset" class="danger">🗑️ Reiniciar</button>
+            <!-- ... otros botones ... -->          
+<button id="btn-sync" class="warn">☁️ Cargar de GitHub</button> <!-- El que pusimos antes -->
+<button id="btn-toggle-gallery" class="gray">📷 Galería</button> <!-- NUEVO -->
           </div>
           <div id="import-area" style="display:none; margin-top:8px">
             <textarea id="import-text" rows="6" style="width:100%; padding:8px; border-radius:8px; border:1px solid #e6f2ff;" placeholder='Pega aquí o JSON exportado'></textarea>
@@ -366,6 +369,7 @@ syncFromGithub: function() {
       if (!this.state.filter) this.state.filter = 'all';
       if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
       if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
+      if (this.state.galleryVisible === undefined) this.state.galleryVisible = true; 
     },
 
     // Petición controlada a datos.json que **fusiona** solo metadatos no destructivos.
@@ -515,7 +519,7 @@ syncFromGithub: function() {
         }
       });
       
-      if (this.config.isViewMode && allTeamsWithPhotos.length > 0) {
+      if ((this.config.isViewMode || this.state.galleryVisible) && allTeamsWithPhotos.length > 0) {
         gallerySection.style.display = 'block';
         
         allTeamsWithPhotos.forEach(team => {
@@ -1665,6 +1669,19 @@ syncFromGithub: function() {
       document.getElementById('btn-color-picker').addEventListener('click', () => this.toggleColorPicker());
       document.getElementById('btn-sync').addEventListener('click', () => this.syncFromGithub());
       
+      // --- BLOQUE NUEVO ---
+      const btnGallery = document.getElementById('btn-toggle-gallery');
+      if (btnGallery) {
+        btnGallery.addEventListener('click', () => {
+          this.state.galleryVisible = !this.state.galleryVisible;
+          this.saveState();
+          this.renderGallery();
+          // Feedback visual opcional en el botón
+          btnGallery.textContent = this.state.galleryVisible ? "📷 Ocultar Galería" : "📷 Amosar Galería";
+        });
+      }
+      // --------------------
+
       // Event listeners para cambiar tema
       document.querySelectorAll('.color-option').forEach(option => {
         option.addEventListener('click', () => {
