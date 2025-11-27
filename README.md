@@ -1,68 +1,79 @@
 # 🏒 Xestor de Torneos Escolares - CEIP Balaídos
 
-Benvido/a ao repositorio do Xestor de Torneos Escolares, unha ferramenta web creada para organizar o Torneo de Nadal de hóckey do CEIP Balaídos (e adaptable a outros torneos).
+Benvido/a ao repositorio do Xestor de Torneos Escolares, unha ferramenta web creada para organizar o Torneo de Nadal de hóckey do CEIP Balaídos.
 
-Esta aplicación está contida nun único ficheiro HTML que inclúe toda a lóxica (JavaScript) e os estilos (CSS) necesarios para funcionar.
+Esta aplicación é unha **Web App Progresiva (PWA) estática**: todo o funcionamento está contido nun único ficheiro HTML, sen necesidade de servidores complexos nin bases de datos.
 
-## 🚀 Como Usar a Ferramenta
+## 🚀 Modos de Uso
 
-A ferramenta ten dous modos de uso principais, que se controlan a través da URL.
+A ferramenta detecta automaticamente como comportarse dependendo da ligazón que utilices:
 
-### 1. Modo Xestión (para profesores/administradores)
+### 1. 🛠️ Modo Xestión (Profesorado)
+*Prioridade: Memoria do dispositivo (LocalStorage)*
 
-É o modo por defecto que permite editar todos os aspectos do torneo.
-
-- **Acceso:** Abre o ficheiro `torneo_hockey_maestro.html` directamente no navegador ou accede ao enlace principal publicado en GitHub Pages.
+Este é o modo para introducir datos, resultados e xestionar o torneo.
+- **Acceso:** Abre o ficheiro `index.html` (ou a ligazón principal sen parámetros).
+- **Comportamento:** A aplicación le primeiro a memoria do teu dispositivo para non perder o traballo en curso. Se a memoria está baleira, tentará cargar os datos da nube para empezar.
 - **Funcionalidades:**
-    - Engadir, eliminar e gardar equipos e os seus escudos (mediante URL).
-    - Xerar calendarios de partidos a dobre volta por xornadas.
-    - Introducir resultados dos partidos.
-    - Xerar as fases finais (eliminatorias) automaticamente.
-    - Exportar e importar todos os datos do torneo en formato JSON.
-    - Activar un "Modo Proxector" para unha mellor visualización en pizarras dixitais.
+    - Xestionar equipos, escudos e fotos.
+    - Xerar calendarios e eliminatorias.
+    - Anotar resultados e Fair Play.
+    - **Sincronizar:** Botón especial para traer datos actualizados dende GitHub.
 
-### 2. Modo Consulta (para alumnos/visitantes)
+### 2. 👀 Modo Consulta (Alumnado e Familias)
+*Prioridade: A Nube (GitHub)*
 
-Un modo de só lectura ideal para compartir os resultados.
-
+Este é o modo de só lectura para ver a clasificación en tempo real.
 - **Acceso:** Engade `?modo=ver` ao final da URL.
-  - Exemplo: `https://o-teu-usuario.github.io/o-teu-repositorio/torneo_hockey_maestro.html?modo=ver`
+  - Exemplo: `https://o-teu-usuario.github.io/nome-do-repo/index.html?modo=ver`
+- **Comportamento:** Ignora a memoria local e **forza sempre a descarga** dos últimos datos subidos a GitHub (`datos.json`).
 - **Funcionalidades:**
-    - Ver todos os equipos, xornadas, resultados e clasificacións.
-    - Os controis de edición están ocultos e desactivados.
-    - Permite usar os filtros para visualizar por ciclo ou por curso.
-    - Permite activar o "Modo Proxector".
+    - Visualización de táboas, resultados e galería de fotos.
+    - Non aparecen botóns de borrar nin editar.
 
-    
-## 🔄 Flujo de Trabajo: Actualización de Resultados
+---
 
-Este proyecto utiliza un sistema de **datos externos** para separar la gestión del torneo de la visualización pública. De esta forma, los alumnos pueden consultar los resultados sin riesgo de modificar la base de datos.
+## 🔄 Fluxo de Traballo: Como actualizar o torneo
 
-### 1. Gestión del Torneo (Rol del Profesor)
-Para introducir resultados, crear jornadas o modificar equipos:
-1. Abre el archivo `index.html` en tu ordenador (o accede a tu versión de gestión privada).
-2. Realiza los cambios necesarios (goles, actas, fair play, etc.).
-3. Ve a la sección **⚙️ Xestión de datos**.
-4. Haz clic en el botón **"⬇️ Descargar JSON"**.
-5. Se descargará un archivo (ej: `torneo_balaidos_2025.json`).
-6. **IMPORTANTE:** Renombra ese archivo a **`datos.json`** (todo en minúsculas).
+Para que o alumnado vexa os resultados no seus móbiles, debes seguir este proceso de "relevos" entre o teu dispositivo e GitHub.
 
-### 2. Publicación de Datos (Subida a GitHub)
-Para que los alumnos vean los cambios:
-1. Ve a la página principal de este repositorio en GitHub.
-2. Haz clic en el botón **Add file** > **Upload files**.
-3. Arrastra el archivo **`datos.json`** que acabas de renombrar.
-4. Escribe un mensaje breve en "Commit changes" (ej: *"Resultados jornada 3"*).
-5. Pulsa el botón verde **Commit changes**.
+### Paso 1: Edición (No teu PC ou Móbil)
+1. Entra na aplicación en **Modo Xestión**.
+2. Introduce os resultados dos partidos, xera xornadas, etc.
+3. *Os datos gárdanse automaticamente na memoria do teu dispositivo.*
 
-*GitHub actualizará automáticamente la página en unos segundos.*
+### Paso 2: Publicación (Subida á Nube)
+Cando remates a xornada e queiras facer públicos os datos:
+1. Vai á sección **⚙️ Xestión de datos**.
+2. Preme o botón **"⬇️ Descargar JSON"**.
+3. Gardarase un ficheiro (ex: `datos.json`) no teu dispositivo.
+4. Vai a este repositorio en GitHub.
+5. Preme **Add file > Upload files**.
+6. Arrastra o ficheiro `datos.json` e preme no botón verde **Commit changes**.
 
-### 3. Visualización (Rol del Alumno)
-Los alumnos deben acceder a través del siguiente enlace para ver la clasificación y los partidos en modo "solo lectura":
+*En 1 ou 2 minutos, a web actualizarase para todo o alumnado.*
 
-> **https://[TU-USUARIO].github.io/[NOMBRE-DEL-REPO]/index.html?modo=ver**
+### Paso 3: Sincronización (Cambio de dispositivo)
+Se traballaches dende o móbil no patio e agora queres seguir dende o ordenador (ou viceversa):
+1. Asegúrate de ter subido o `datos.json` a GitHub dende o dispositivo onde traballaches (Paso 2).
+2. Abre a web no outro dispositivo (ex: o ordenador).
+3. Na sección de xestión, preme o botón **"☁️ Cargar de GitHub"**.
+4. Isto borrará a memoria local antiga dese dispositivo e traerá a última versión da nube.
 
-* **Nota:** El parámetro `?modo=ver` oculta los botones de administración para una experiencia más limpia.
-* **Nota 2:** Si los cambios no aparecen inmediatamente, pide a los alumnos que refresquen la página. El sistema está configurado para evitar que el móvil guarde datos antiguos.
+---
+
+## 💡 Guía de Botóns de Xestión
+
+* **📤 Exportar JSON:** Copia os datos ao portapapeis (útil para copias de seguridade rápidas).
+* **📊 Exportar Excel:** Xera un ficheiro CSV compatible con Excel con todas as estatísticas.
+* **⬇️ Descargar JSON:** Descarga o ficheiro necesario para subir a GitHub.
+* **☁️ Cargar de GitHub:** Forza a actualización do teu panel de control cos datos que haxa na nube (útil se cambiaches de dispositivo).
+* **📷 Galería:** Activa ou desactiva a visualización da galería de fotos no panel de xestión.
+* **🗑️ Reiniciar:** Borra todos os datos locais e deixa o torneo a cero (Perigo!).
+
+---
+
+Proxecto de código aberto para a xestión deportiva escolar en galego.
+* **Nota 2:** Se os cambios non aparecen inmediatamente, pide aos alumnos que refresquen a páxina. O sistema está configurado para evitar que o móbil garde datos antigos.
 
 
