@@ -734,12 +734,24 @@ document.addEventListener('DOMContentLoaded', function() {
       const stats = teams.map((t, idx) => ({ name: t.name, shield: t.shield, photo: t.photo, idx, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, PTS: 0 })); 
       
       (g.rounds || []).flatMap(r => r.matches).forEach(m => { 
-        if (m.scoreA === null || m.scoreB === null) return; 
-        const a = m.a, b = m.b, sA = m.scoreA, sB = m.scoreB; 
+        // 1. Validar que os datos existen
+        if (m.scoreA === null || m.scoreA === undefined || m.scoreA === "" || 
+            m.scoreB === null || m.scoreB === undefined || m.scoreB === "") return; 
+        
+        // 2. Converter a número real (evita o erro NaN)
+        const sA = Number(m.scoreA);
+        const sB = Number(m.scoreB);
+
+        // 3. Se non é un número válido, ignorar partido
+        if (isNaN(sA) || isNaN(sB)) return;
+
+        const a = m.a, b = m.b; 
         if (!stats[a] || !stats[b]) return; 
+        
         stats[a].P++; stats[b].P++; 
         stats[a].GF += sA; stats[a].GA += sB; 
         stats[b].GF += sB; stats[b].GA += sA; 
+        
         if (sA > sB) { stats[a].W++; stats[b].L++; stats[a].PTS += 3; } 
         else if (sA < sB) { stats[b].W++; stats[a].L++; stats[b].PTS += 3; } 
         else { stats[a].D++; stats[b].D++; stats[a].PTS += 1; stats[b].PTS += 1; } 
@@ -752,7 +764,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (y.GD !== x.GD) return y.GD - x.GD; 
         if (y.GF !== x.GF) return y.GF - x.GF;
         const h2h = this.computeHeadToHead(g, [x.idx, y.idx]);
-        if (h2h[x.idx] && h2h[y.idx]) {
+        if (h2h && h2h[x.idx] && h2h[y.idx]) {
           if (h2h[y.idx].PTS !== h2h[x.idx].PTS) return h2h[y.idx].PTS - h2h[x.idx].PTS;
           if (h2h[y.idx].GD !== h2h[x.idx].GD) return h2h[y.idx].GD - h2h[x.idx].GD;
           if (h2h[y.idx].GF !== h2h[x.idx].GF) return h2h[y.idx].GF - h2h[x.idx].GF;
