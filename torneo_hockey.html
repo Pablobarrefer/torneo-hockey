@@ -1151,12 +1151,28 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     
     exportData: function() { 
+      // 1. Convertir o estado actual a texto JSON
       const s = JSON.stringify(this.state, null, 2); 
-      navigator.clipboard?.writeText(s).then(() => this.showBanner('Datos copiados ao portapapeis.'), () => { 
-        document.getElementById('import-text').value = s; 
-        this.showImport(); 
-        this.showBanner('Copia o JSON manualmente.'); 
-      }); 
+      
+      // 2. Crear un "ficheiro virtual" (Blob)
+      const blob = new Blob([s], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      
+      // 3. Crear un enlace invisible para descargalo
+      const a = document.createElement("a");
+      a.href = url;
+      
+      // 4. Poñerlle nome coa data de hoxe (Ex: backup_torneo_2023-12-05.json)
+      const dataHoxe = new Date().toISOString().slice(0,10);
+      a.download = `backup_torneo_${dataHoxe}.json`;
+      
+      // 5. Forzar a descarga e limpar
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      this.showBanner('Copia de seguridade descargada!'); 
     },
     
     exportToExcel: function() {
