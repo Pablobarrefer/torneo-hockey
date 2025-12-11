@@ -313,13 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
       this.loadTheme();
       this.bindEvents();
 
-     // 1. Escoitar cambios na base de datos (CON DOBRE RESTAURACIÓN)
-      db.ref('torneo').on('value', (snapshot) => {
-        
-       // 1. Escoitar cambios na base de datos (CON RESTAURACIÓN MEJORADA)
-db.ref('torneo').on('value', (snapshot) => {
-  
-// 1. Escoitar cambios na base de datos (CON RESTAURACIÓN MEJORADA)
+    // 1. Escoitar cambios na base de datos (CON RESTAURACIÓN MEJORADA)
 db.ref('torneo').on('value', (snapshot) => {
   
   // --- A) GARDAR ESTADO ANTES DE ACTUALIZAR ---
@@ -387,9 +381,8 @@ db.ref('torneo').on('value', (snapshot) => {
   // Ejecutamos la restauración en tres tiempos para máxima fiabilidad
   requestAnimationFrame(restoreView);  // Inmediato
   setTimeout(restoreView, 50);          // Refuerzo a 50ms
-  setTimeout(restoreView, 150);         // Refuerzo a 150ms (por si el render tarda)
-});
-
+  setTimeout(restoreView, 150);         // Refuerzo a 150ms
+}); // <--- ¡ESTE CIERRE ERA LO QUE FALTABA!
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
         this.user = user;
