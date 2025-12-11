@@ -1,3 +1,4 @@
+    
 <!DOCTYPE html>
 <html lang="gl">
 <head>
@@ -113,8 +114,20 @@
   .projector-mode button[id^="btn-toggle-photos"]{display:none!important}
   #projectorModeBtnExit{position:fixed;top:10px;right:10px;z-index:1000}
   @media print{body{background:#fff}.banner,button,.controls{display:none!important}.page{box-shadow:none;border:none;margin:0;border-radius:0}}
-  /* CORRECCIÓN VITAL: Eliminamos .management-section da lista de elementos ocultos en view-mode */
-  .view-mode .controls, .view-mode .admin-actions-container, .view-mode button[id^="btn-add-team"], .view-mode button[id^="btn-remove-team"], .view-mode button[id^="btn-save-teams"], .view-mode button[id^="btn-gen-schedule"], .view-mode button[id^="btn-clear-matches"], .view-mode button[id^="btn-toggle-shields"], .view-mode button[id^="btn-toggle-photos"], .view-mode button[id^="btn-gen-playoffs"], .view-mode button[id^="btn-toggle-all-liga"] { display: none !important; }
+  
+  /* ESTILOS DE MODO VISTA (Importante para ocultar controis) */
+  .view-mode .controls, 
+  .view-mode .admin-actions-container, 
+  .view-mode button[id^="btn-add-team"], 
+  .view-mode button[id^="btn-remove-team"], 
+  .view-mode button[id^="btn-save-teams"], 
+  .view-mode button[id^="btn-gen-schedule"], 
+  .view-mode button[id^="btn-clear-matches"], 
+  .view-mode button[id^="btn-toggle-shields"], 
+  .view-mode button[id^="btn-toggle-photos"], 
+  .view-mode button[id^="btn-gen-playoffs"], 
+  .view-mode button[id^="btn-toggle-all-liga"] { display: none !important; }
+  
   .view-mode input { pointer-events: none; background: #fdfdfd !important; border-color: transparent !important; }
   .view-mode .teams-list { gap: 4px; }
   .view-mode .team-entry { padding: 8px; background: #f8f9fa; border-radius: 6px; }
@@ -225,7 +238,7 @@
           </div>
 
           <div id="admin-controls" style="display:none; gap:8px; flex-wrap:wrap;">
-            <button id="btn-export">📤 Exportar</button>
+            <button id="btn-export">📤 Exportar Backup</button>
             <button id="btn-export-excel" class="warn">📊 Excel</button>
             <button id="btn-toggle-gallery" class="gray">📷 Galería</button>
             <button id="btn-reset" class="danger">🗑️ Reiniciar</button>
@@ -262,7 +275,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   
-  // 1. CONFIGURACIÓN DE FIREBASE
+  // 1. CONFIGURACIÓN DE FIREBASE (As túas chaves reais)
   const firebaseConfig = {
     apiKey: "AIzaSyAnLlD1ctd6C0QBTZtdFgpzJ5KRL8ztd5M",
     authDomain: "torneo-hockey.firebaseapp.com",
@@ -298,15 +311,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     init: function() {
       this.loadTheme();
-      
-      const btnLog = document.getElementById('btn-login-google');
-      if(btnLog) btnLog.addEventListener('click', () => this.login());
-      const btnOut = document.getElementById('btn-logout');
-      if(btnOut) btnOut.addEventListener('click', () => this.logout());
-
       this.bindEvents();
 
-     // 1. Escoitar cambios na base de datos (CON MEMORIA DE SCROLL)
+      // 1. Escoitar cambios na base de datos (CON MEMORIA DE SCROLL)
       db.ref('torneo').on('value', (snapshot) => {
         // A) ANTES DE PINTAR: Gardamos posición e foco
         const scrollY = window.scrollY; 
@@ -346,7 +353,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
       });
-      // Xestionar usuario
+
+      // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
         this.user = user;
         this.updateAdminUI();
@@ -396,6 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loginArea.style.display = 'none';
         adminControls.style.display = 'none';
         
+        // MOSTRAR BOTÓN DE LOGIN SE NON É MODO VISTA
         if (!this.config.isViewMode) {
             loginBtnContainer.style.display = 'block';
         } else {
@@ -761,15 +770,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const stats = teams.map((t, idx) => ({ name: t.name, shield: t.shield, photo: t.photo, idx, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, PTS: 0 })); 
       
       (g.rounds || []).flatMap(r => r.matches).forEach(m => { 
-        // 1. Validar que os datos existen
         if (m.scoreA === null || m.scoreA === undefined || m.scoreA === "" || 
             m.scoreB === null || m.scoreB === undefined || m.scoreB === "") return; 
         
-        // 2. Converter a número real (evita o erro NaN)
         const sA = Number(m.scoreA);
         const sB = Number(m.scoreB);
 
-        // 3. Se non é un número válido, ignorar partido
         if (isNaN(sA) || isNaN(sB)) return;
 
         const a = m.a, b = m.b; 
@@ -1189,7 +1195,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const a = document.createElement("a");
       a.href = url;
       
-      // 4. Poñerlle nome coa data de hoxe (Ex: backup_torneo_2023-12-05.json)
+      // 4. Poñerlle nome coa data de hoxe
       const dataHoxe = new Date().toISOString().slice(0,10);
       a.download = `backup_torneo_${dataHoxe}.json`;
       
@@ -1284,17 +1290,38 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     
     bindEvents: function() {
-      document.getElementById('btn-save-year').addEventListener('click', () => this.saveYear());
-      document.getElementById('btn-print').addEventListener('click', () => this.printPage());
-      document.getElementById('btn-projector').addEventListener('click', () => this.toggleProjectorMode());
-      document.getElementById('btn-exit-projector').addEventListener('click', () => this.toggleProjectorMode());
-      document.getElementById('btn-gen-playoffs-2').addEventListener('click', () => this.generatePlayoffForCycle('2ciclo'));
-      document.getElementById('btn-gen-playoffs-3').addEventListener('click', () => this.generatePlayoffForCycle('3ciclo'));
-      document.getElementById('btn-export').addEventListener('click', () => this.exportData());
-      document.getElementById('btn-export-excel').addEventListener('click', () => this.exportToExcel());
-      document.getElementById('btn-reset').addEventListener('click', () => this.confirmReset());
-      document.getElementById('btn-toggle-all-liga').addEventListener('click', () => this.toggleAllLiga());
-      document.getElementById('btn-color-picker').addEventListener('click', () => this.toggleColorPicker());
+      const btnSaveYear = document.getElementById('btn-save-year');
+      if(btnSaveYear) btnSaveYear.addEventListener('click', () => this.saveYear());
+
+      const btnPrint = document.getElementById('btn-print');
+      if(btnPrint) btnPrint.addEventListener('click', () => this.printPage());
+
+      const btnProjector = document.getElementById('btn-projector');
+      if(btnProjector) btnProjector.addEventListener('click', () => this.toggleProjectorMode());
+
+      const btnExitProj = document.getElementById('btn-exit-projector');
+      if(btnExitProj) btnExitProj.addEventListener('click', () => this.toggleProjectorMode());
+
+      const btnGen2 = document.getElementById('btn-gen-playoffs-2');
+      if(btnGen2) btnGen2.addEventListener('click', () => this.generatePlayoffForCycle('2ciclo'));
+
+      const btnGen3 = document.getElementById('btn-gen-playoffs-3');
+      if(btnGen3) btnGen3.addEventListener('click', () => this.generatePlayoffForCycle('3ciclo'));
+
+      const btnExport = document.getElementById('btn-export');
+      if(btnExport) btnExport.addEventListener('click', () => this.exportData());
+
+      const btnExcel = document.getElementById('btn-export-excel');
+      if(btnExcel) btnExcel.addEventListener('click', () => this.exportToExcel());
+
+      const btnReset = document.getElementById('btn-reset');
+      if(btnReset) btnReset.addEventListener('click', () => this.confirmReset());
+
+      const btnToggleLiga = document.getElementById('btn-toggle-all-liga');
+      if(btnToggleLiga) btnToggleLiga.addEventListener('click', () => this.toggleAllLiga());
+
+      const btnColor = document.getElementById('btn-color-picker');
+      if(btnColor) btnColor.addEventListener('click', () => this.toggleColorPicker());
       
       const btnGallery = document.getElementById('btn-toggle-gallery');
       if (btnGallery) {
@@ -1323,20 +1350,18 @@ document.addEventListener('DOMContentLoaded', function() {
       document.addEventListener('click', (event) => {
         const picker = document.getElementById('color-picker');
         const btn = document.getElementById('btn-color-picker');
-        if (picker.classList.contains('show') && 
+        if (picker && picker.classList.contains('show') && 
             !picker.contains(event.target) && 
             !btn.contains(event.target)) {
           picker.classList.remove('show');
         }
       });
       
-      document.getElementById('btn-filter-all').addEventListener('click', () => this.applyFilter('all'));
-      document.getElementById('btn-filter-c2').addEventListener('click', () => this.applyFilter('c2'));
-      document.getElementById('btn-filter-c3').addEventListener('click', () => this.applyFilter('c3'));
-      document.getElementById('btn-filter-3').addEventListener('click', () => this.applyFilter('3'));
-      document.getElementById('btn-filter-4').addEventListener('click', () => this.applyFilter('4'));
-      document.getElementById('btn-filter-5').addEventListener('click', () => this.applyFilter('5'));
-      document.getElementById('btn-filter-6').addEventListener('click', () => this.applyFilter('6'));
+      const filters = ['all', 'c2', 'c3', '3', '4', '5', '6'];
+      filters.forEach(f => {
+          const btn = document.getElementById(`btn-filter-${f}`);
+          if(btn) btn.addEventListener('click', () => this.applyFilter(f));
+      });
       
       document.addEventListener('click', (event) => {
         const button = event.target.closest('button[id^="btn-"]');
@@ -1416,6 +1441,21 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleColorPicker: function() {
       const picker = document.getElementById('color-picker');
       picker.classList.toggle('show');
+    },
+    importFromText: function() { 
+      const t = document.getElementById('import-text').value.trim(); 
+      if (!t) return alert('Pega o JSON antes de importar.'); 
+      try { 
+        const p = JSON.parse(t); 
+        this.state = p; 
+        this.sanitizeState();
+        this.saveState(); 
+        this.renderAll(); 
+        document.getElementById('import-area').style.display = 'none';
+        this.showBanner('Importación completada.'); 
+      } catch (e) { 
+        alert('Erro ao procesar JSON: ' + e.message); 
+      } 
     }
   };
 
@@ -1424,3 +1464,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
+
+  
