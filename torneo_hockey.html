@@ -379,9 +379,12 @@ db.ref('torneo').on('value', (snapshot) => {
   };
 
   // Ejecutamos la restauración en tres tiempos para máxima fiabilidad
-  requestAnimationFrame(restoreView);  // Inmediato
-  setTimeout(restoreView, 50);          // Refuerzo a 50ms
-  setTimeout(restoreView, 150);         // Refuerzo a 150ms
+  requestAnimationFrame(restoreView);
+setTimeout(restoreView, 20);
+setTimeout(restoreView, 50);
+setTimeout(restoreView, 100);
+setTimeout(restoreView, 200);
+setTimeout(restoreView, 300);
 }); // <--- ¡ESTE CIERRE ERA LO QUE FALTABA!
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
