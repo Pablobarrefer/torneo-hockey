@@ -378,13 +378,31 @@ db.ref('torneo').on('value', (snapshot) => {
     }
   };
 
-  // Ejecutamos la restauración en tres tiempos para máxima fiabilidad
-  requestAnimationFrame(restoreView);
-setTimeout(restoreView, 20);
-setTimeout(restoreView, 50);
+  // Restauración inteligente: espera a que el DOM esté listo
+const restaurarConEspera = () => {
+  // Verificar si las cajas existen
+  const cajasListas = Object.keys(scrollStates).every(id => {
+    const box = document.getElementById(id);
+    return box !== null;
+  });
+  
+  if (cajasListas) {
+    restoreView(); // Si todo está listo, restaura
+  } else {
+    setTimeout(restaurarConEspera, 50); // Si no, espera un poco más
+  }
+};
+
+// Primera restauración inmediata (por si ya está todo)
+requestAnimationFrame(restoreView);
+
+// Restauración con espera inteligente
+setTimeout(restaurarConEspera, 10);
+
+// Restauraciones de seguridad
 setTimeout(restoreView, 100);
 setTimeout(restoreView, 200);
-setTimeout(restoreView, 300);
+setTimeout(restoreView, 400);
 }); // <--- ¡ESTE CIERRE ERA LO QUE FALTABA!
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
