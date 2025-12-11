@@ -313,32 +313,31 @@ document.addEventListener('DOMContentLoaded', function() {
       this.loadTheme();
       this.bindEvents();
 
-      // 1. Escoitar cambios na base de datos (CON SUPER MEMORIA DE SCROLL)
+      // 1. Escoitar cambios na base de datos (CON DOBRE RESTAURACIÓN)
       db.ref('torneo').on('value', (snapshot) => {
         
-        // --- A) ANTES DE PINTAR: GARDAR ESTADO ---
+        // --- A) GARDAR ESTADO ---
         const pageScroll = window.scrollY; // Scroll da páxina
         const activeElement = document.activeElement;
         
-        // Variables para recuperar o foco e o scroll interno da caixa
-        let focusSelector = null;
-        let containerSelector = null;
-        let containerScroll = 0;
+        // Variables para recuperar o foco
+        let focusedMatchId = null;
+        let focusedScoreType = null;
+        
+        // Variables para o scroll da caixa
+        let containerId = null;
+        let containerScrollTop = 0;
 
+        // Se estamos escribindo nun input, gardamos cal é
         if (activeElement && activeElement.tagName === 'INPUT' && activeElement.dataset.matchId) {
-            const matchId = activeElement.dataset.matchId;
-            const scoreType = activeElement.dataset.scoreType;
+            focusedMatchId = activeElement.dataset.matchId;
+            focusedScoreType = activeElement.dataset.scoreType;
             
-            // 1. Gardamos que casilla era
-            if (scoreType) {
-                focusSelector = `input[data-match-id="${matchId}"][data-score-type="${scoreType}"]`;
-            }
-
-            // 2. Gardamos canto baixaches na caixa de partidos (IMPORTANTE)
-            const parentContainer = activeElement.closest('.matches-container');
-            if (parentContainer) {
-                containerSelector = '#' + parentContainer.id; // Ex: #matches-3A
-                containerScroll = parentContainer.scrollTop;
+            // Gardamos tamén o scroll da caixa onde está ese input
+            const parentBox = activeElement.closest('.matches-container');
+            if (parentBox) {
+                containerId = parentBox.id;
+                containerScrollTop = parentBox.scrollTop;
             }
         }
 
@@ -346,8 +345,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = snapshot.val();
         if (data) {
           this.state = data;
-          // Console log opcional para depuración
-          // console.log("🔥 Datos actualizados");
         } else {
           this.initEmptyState();
         }
@@ -355,34 +352,35 @@ document.addEventListener('DOMContentLoaded', function() {
         this.sanitizeState();
         this.renderAll(); 
 
-        // --- C) DESPOIS DE PINTAR: RESTAURAR TODO ---
-        
-        // Usamos setTimeout para darlle tempo ao navegador a debuxar as caixas
-        setTimeout(() => {
-            // 1. Restaurar scroll da páxina xeral
+        // --- C) RESTAURAR (Función interna) ---
+        const restoreView = () => {
+            // 1. Páxina xeral
             if (pageScroll > 0) window.scrollTo(0, pageScroll);
 
-            // 2. Restaurar scroll da caixa do grupo (O QUE FALLABA)
-            if (containerSelector && containerScroll > 0) {
-                const container = document.querySelector(containerSelector);
-                if (container) {
-                    container.scrollTop = containerScroll;
+            // 2. Caixa do grupo
+            if (containerId) {
+                const box = document.getElementById(containerId);
+                if (box) box.scrollTop = containerScrollTop;
+            }
+
+            // 3. Foco no input
+            if (focusedMatchId && focusedScoreType) {
+                const selector = `input[data-match-id="${focusedMatchId}"][data-score-type="${focusedScoreType}"]`;
+                const input = document.querySelector(selector);
+                if (input) {
+                    input.focus();
+                    // Intentar poñer cursor ao final
+                    try { 
+                       // Só funciona en inputs tipo texto, pero por se acaso
+                       input.setSelectionRange(input.value.length, input.value.length); 
+                    } catch(e) {} 
                 }
             }
-            
-            // 3. Restaurar o cursor na casilla
-            if (focusSelector) {
-                const inputToFocus = document.querySelector(focusSelector);
-                if (inputToFocus) {
-                    inputToFocus.focus();
-                    // Truco para poñer o cursor ao final do número (mellora a experiencia)
-                    if (inputToFocus.value) {
-                        // Isto pode fallar en algúns navegadores con type="number", por iso o try/catch
-                        try { inputToFocus.setSelectionRange(inputToFocus.value.length, inputToFocus.value.length); } catch(e){}
-                    }
-                }
-            }
-        }, 10); // 10 milisegundos de espera son suficientes
+        };
+
+        // Executamos a restauración en dous tempos para asegurar
+        requestAnimationFrame(restoreView); // Inmediato
+        setTimeout(restoreView, 50);        // Reforzo aos 50ms
       });
 
       // 2. Xestionar usuario
