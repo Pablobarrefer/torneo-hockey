@@ -306,8 +306,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
       this.bindEvents();
 
-      // Escoitar cambios en tempo real
+     // 1. Escoitar cambios na base de datos (CON MEMORIA DE SCROLL)
       db.ref('torneo').on('value', (snapshot) => {
+        // A) ANTES DE PINTAR: Gardamos posición e foco
+        const scrollY = window.scrollY; 
+        const activeElement = document.activeElement;
+        let focusSelector = null;
+
+        // Se o cursor está nun input, gardamos cal é para volver
+        if (activeElement && activeElement.tagName === 'INPUT' && activeElement.dataset.matchId) {
+            const matchId = activeElement.dataset.matchId;
+            const scoreType = activeElement.dataset.scoreType; 
+            if (scoreType) {
+                focusSelector = `input[data-match-id="${matchId}"][data-score-type="${scoreType}"]`;
+            }
+        }
+
+        // B) ACTUALIZAMOS DATOS
         const data = snapshot.val();
         if (data) {
           this.state = data;
@@ -315,10 +330,22 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           this.initEmptyState();
         }
+        
         this.sanitizeState();
-        this.renderAll();
-      });
+        this.renderAll(); 
 
+        // C) DESPOIS DE PINTAR: Restauramos posición
+        if (scrollY > 0) window.scrollTo(0, scrollY);
+        
+        if (focusSelector) {
+            const inputToFocus = document.querySelector(focusSelector);
+            if (inputToFocus) {
+                inputToFocus.focus(); 
+                // Opcional: Manter o cursor ao final do número
+                // try { inputToFocus.setSelectionRange(inputToFocus.value.length, inputToFocus.value.length); } catch(e){}
+            }
+        }
+      });
       // Xestionar usuario
       auth.onAuthStateChanged((user) => {
         this.user = user;
