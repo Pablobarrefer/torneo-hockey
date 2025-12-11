@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
       this.loadTheme();
       this.bindEvents();
 
-      // 1. Escoitar cambios na base de datos (CON DOBRE RESTAURACIÓN)
+     // 1. Escoitar cambios na base de datos (CON DOBRE RESTAURACIÓN)
       db.ref('torneo').on('value', (snapshot) => {
         
         // --- A) GARDAR ESTADO ---
@@ -377,6 +377,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         };
+
+        // Executamos a restauración en dous tempos para asegurar
+        requestAnimationFrame(restoreView); // Inmediato
+        setTimeout(restoreView, 50);        // Reforzo aos 50ms
+      });
 
         // Executamos a restauración en dous tempos para asegurar
         requestAnimationFrame(restoreView); // Inmediato
