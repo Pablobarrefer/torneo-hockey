@@ -442,6 +442,16 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     renderAll: function() {
+      // 1. MEMORIZAR: Antes de borrar nada, gardamos o scroll da páxina e de CADA grupo
+      const pageScroll = window.scrollY;
+      const groupScrolls = {};
+      
+      // Buscamos todas as caixas de partidos e gardamos a súa posición exacta
+      document.querySelectorAll('.matches-container').forEach(div => {
+        if (div.id) groupScrolls[div.id] = div.scrollTop;
+      });
+
+      // 2. PINTAR: Facemos todo o traballo de debuxo
       this.updateTitleFromYear();
       this.renderAllGroups();
       this.renderPlayoffs();
@@ -451,6 +461,19 @@ document.addEventListener('DOMContentLoaded', function() {
       this.applyFilter(this.state.filter);
       this.applyLigaVisibility();
       this.updateAdminUI(); 
+
+      // 3. RESTAURAR: Volvemos poñer as barras onde estaban
+      // Usamos setTimeout(0) para esperar a que o navegador remate de pintar
+      setTimeout(() => {
+        // Restaurar páxina principal
+        if(pageScroll > 0) window.scrollTo(0, pageScroll);
+        
+        // Restaurar cada caixa de grupo
+        Object.keys(groupScrolls).forEach(id => {
+          const div = document.getElementById(id);
+          if (div) div.scrollTop = groupScrolls[id];
+        });
+      }, 0);
     },
     
     toggleAllLiga: function() {
