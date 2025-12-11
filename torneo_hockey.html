@@ -313,27 +313,41 @@ document.addEventListener('DOMContentLoaded', function() {
       this.loadTheme();
       this.bindEvents();
 
-      // 1. Escoitar cambios na base de datos (CON MEMORIA DE SCROLL)
+      // 1. Escoitar cambios na base de datos (CON SUPER MEMORIA DE SCROLL)
       db.ref('torneo').on('value', (snapshot) => {
-        // A) ANTES DE PINTAR: Gardamos posición e foco
-        const scrollY = window.scrollY; 
+        
+        // --- A) ANTES DE PINTAR: GARDAR ESTADO ---
+        const pageScroll = window.scrollY; // Scroll da páxina
         const activeElement = document.activeElement;
+        
+        // Variables para recuperar o foco e o scroll interno da caixa
         let focusSelector = null;
+        let containerSelector = null;
+        let containerScroll = 0;
 
-        // Se o cursor está nun input, gardamos cal é para volver
         if (activeElement && activeElement.tagName === 'INPUT' && activeElement.dataset.matchId) {
             const matchId = activeElement.dataset.matchId;
-            const scoreType = activeElement.dataset.scoreType; 
+            const scoreType = activeElement.dataset.scoreType;
+            
+            // 1. Gardamos que casilla era
             if (scoreType) {
                 focusSelector = `input[data-match-id="${matchId}"][data-score-type="${scoreType}"]`;
             }
+
+            // 2. Gardamos canto baixaches na caixa de partidos (IMPORTANTE)
+            const parentContainer = activeElement.closest('.matches-container');
+            if (parentContainer) {
+                containerSelector = '#' + parentContainer.id; // Ex: #matches-3A
+                containerScroll = parentContainer.scrollTop;
+            }
         }
 
-        // B) ACTUALIZAMOS DATOS
+        // --- B) ACTUALIZAR DATOS ---
         const data = snapshot.val();
         if (data) {
           this.state = data;
-          console.log("🔥 Datos recibidos en tempo real!");
+          // Console log opcional para depuración
+          // console.log("🔥 Datos actualizados");
         } else {
           this.initEmptyState();
         }
@@ -341,17 +355,34 @@ document.addEventListener('DOMContentLoaded', function() {
         this.sanitizeState();
         this.renderAll(); 
 
-        // C) DESPOIS DE PINTAR: Restauramos posición
-        if (scrollY > 0) window.scrollTo(0, scrollY);
+        // --- C) DESPOIS DE PINTAR: RESTAURAR TODO ---
         
-        if (focusSelector) {
-            const inputToFocus = document.querySelector(focusSelector);
-            if (inputToFocus) {
-                inputToFocus.focus(); 
-                // Opcional: Manter o cursor ao final do número
-                // try { inputToFocus.setSelectionRange(inputToFocus.value.length, inputToFocus.value.length); } catch(e){}
+        // Usamos setTimeout para darlle tempo ao navegador a debuxar as caixas
+        setTimeout(() => {
+            // 1. Restaurar scroll da páxina xeral
+            if (pageScroll > 0) window.scrollTo(0, pageScroll);
+
+            // 2. Restaurar scroll da caixa do grupo (O QUE FALLABA)
+            if (containerSelector && containerScroll > 0) {
+                const container = document.querySelector(containerSelector);
+                if (container) {
+                    container.scrollTop = containerScroll;
+                }
             }
-        }
+            
+            // 3. Restaurar o cursor na casilla
+            if (focusSelector) {
+                const inputToFocus = document.querySelector(focusSelector);
+                if (inputToFocus) {
+                    inputToFocus.focus();
+                    // Truco para poñer o cursor ao final do número (mellora a experiencia)
+                    if (inputToFocus.value) {
+                        // Isto pode fallar en algúns navegadores con type="number", por iso o try/catch
+                        try { inputToFocus.setSelectionRange(inputToFocus.value.length, inputToFocus.value.length); } catch(e){}
+                    }
+                }
+            }
+        }, 10); // 10 milisegundos de espera son suficientes
       });
 
       // 2. Xestionar usuario
