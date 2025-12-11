@@ -316,77 +316,79 @@ document.addEventListener('DOMContentLoaded', function() {
      // 1. Escoitar cambios na base de datos (CON DOBRE RESTAURACIÓN)
       db.ref('torneo').on('value', (snapshot) => {
         
-        // --- A) GARDAR ESTADO ---
-        const pageScroll = window.scrollY; // Scroll da páxina
-        const activeElement = document.activeElement;
-        
-        // Variables para recuperar o foco
-        let focusedMatchId = null;
-        let focusedScoreType = null;
-        
-        // Variables para o scroll da caixa
-        let containerId = null;
-        let containerScrollTop = 0;
+       // 1. Escoitar cambios na base de datos (CON RESTAURACIÓN MEJORADA)
+db.ref('torneo').on('value', (snapshot) => {
+  
+// 1. Escoitar cambios na base de datos (CON RESTAURACIÓN MEJORADA)
+db.ref('torneo').on('value', (snapshot) => {
+  
+  // --- A) GARDAR ESTADO ANTES DE ACTUALIZAR ---
+  const pageScroll = window.scrollY;
+  const activeElement = document.activeElement;
+  
+  // Variables para recuperar el foco
+  let focusedMatchId = null;
+  let focusedScoreType = null;
+  let focusedGroupId = null;
+  
+  // Variables para el scroll de TODAS las cajas de jornadas
+  const scrollStates = {};
+  document.querySelectorAll('.matches-container').forEach(container => {
+    scrollStates[container.id] = container.scrollTop;
+  });
 
-        // Se estamos escribindo nun input, gardamos cal é
-        if (activeElement && activeElement.tagName === 'INPUT' && activeElement.dataset.matchId) {
-            focusedMatchId = activeElement.dataset.matchId;
-            focusedScoreType = activeElement.dataset.scoreType;
-            
-            // Gardamos tamén o scroll da caixa onde está ese input
-            const parentBox = activeElement.closest('.matches-container');
-            if (parentBox) {
-                containerId = parentBox.id;
-                containerScrollTop = parentBox.scrollTop;
-            }
-        }
+  // Si estamos escribiendo en un input, guardamos cuál es
+  if (activeElement && activeElement.tagName === 'INPUT' && activeElement.dataset.matchId) {
+    focusedMatchId = activeElement.dataset.matchId;
+    focusedScoreType = activeElement.dataset.scoreType;
+    focusedGroupId = activeElement.dataset.groupId;
+  }
 
-        // --- B) ACTUALIZAR DATOS ---
-        const data = snapshot.val();
-        if (data) {
-          this.state = data;
-        } else {
-          this.initEmptyState();
-        }
-        
-        this.sanitizeState();
-        this.renderAll(); 
+  // --- B) ACTUALIZAR DATOS ---
+  const data = snapshot.val();
+  if (data) {
+    this.state = data;
+  } else {
+    this.initEmptyState();
+  }
+  
+  this.sanitizeState();
+  this.renderAll(); 
 
-        // --- C) RESTAURAR (Función interna) ---
-        const restoreView = () => {
-            // 1. Páxina xeral
-            if (pageScroll > 0) window.scrollTo(0, pageScroll);
+  // --- C) RESTAURAR (Función interna mejorada) ---
+  const restoreView = () => {
+    // 1. Página general
+    if (pageScroll > 0) {
+      window.scrollTo(0, pageScroll);
+    }
 
-            // 2. Caixa do grupo
-            if (containerId) {
-                const box = document.getElementById(containerId);
-                if (box) box.scrollTop = containerScrollTop;
-            }
+    // 2. TODAS las cajas de grupos
+    Object.keys(scrollStates).forEach(containerId => {
+      const box = document.getElementById(containerId);
+      if (box) {
+        box.scrollTop = scrollStates[containerId];
+      }
+    });
 
-            // 3. Foco no input
-            if (focusedMatchId && focusedScoreType) {
-                const selector = `input[data-match-id="${focusedMatchId}"][data-score-type="${focusedScoreType}"]`;
-                const input = document.querySelector(selector);
-                if (input) {
-                    input.focus();
-                    // Intentar poñer cursor ao final
-                    try { 
-                       // Só funciona en inputs tipo texto, pero por se acaso
-                       input.setSelectionRange(input.value.length, input.value.length); 
-                    } catch(e) {} 
-                }
-            }
-        };
+    // 3. Foco en el input
+    if (focusedMatchId && focusedScoreType && focusedGroupId) {
+      const selector = `input[data-group-id="${focusedGroupId}"][data-match-id="${focusedMatchId}"][data-score-type="${focusedScoreType}"]`;
+      const input = document.querySelector(selector);
+      if (input) {
+        input.focus();
+        // Intentar poner cursor al final
+        try { 
+          input.setSelectionRange(input.value.length, input.value.length); 
+        } catch(e) {}
+      }
+    }
+  };
 
-        // Executamos a restauración en dous tempos para asegurar
-        requestAnimationFrame(restoreView); // Inmediato
-        setTimeout(restoreView, 50);        // Reforzo aos 50ms
-      });
-
-        // Executamos a restauración en dous tempos para asegurar
-        requestAnimationFrame(restoreView); // Inmediato
-        setTimeout(restoreView, 50);        // Reforzo aos 50ms
-      });
+  // Ejecutamos la restauración en tres tiempos para máxima fiabilidad
+  requestAnimationFrame(restoreView);  // Inmediato
+  setTimeout(restoreView, 50);          // Refuerzo a 50ms
+  setTimeout(restoreView, 150);         // Refuerzo a 150ms (por si el render tarda)
+});
 
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
