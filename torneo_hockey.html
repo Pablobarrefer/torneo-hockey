@@ -309,101 +309,35 @@ document.addEventListener('DOMContentLoaded', function() {
     state: {},
     user: null,
 
-    init: function() {
+  init: function() {
       this.loadTheme();
       this.bindEvents();
+      
+      // BANDERA DE CONTROL
+      this.isEditing = false;
+      this.saveTimer = null;
 
-    // 1. Escoitar cambios na base de datos (CON RESTAURACIÓN MEJORADA)
-db.ref('torneo').on('value', (snapshot) => {
-  
-  // --- A) GARDAR ESTADO ANTES DE ACTUALIZAR ---
-  const pageScroll = window.scrollY;
-  const activeElement = document.activeElement;
-  
-  // Variables para recuperar el foco
-  let focusedMatchId = null;
-  let focusedScoreType = null;
-  let focusedGroupId = null;
-  
-  // Variables para el scroll de TODAS las cajas de jornadas
-  const scrollStates = {};
-  document.querySelectorAll('.matches-container').forEach(container => {
-    scrollStates[container.id] = container.scrollTop;
-  });
+      // 1. Escoitar cambios na base de datos (CON BLOQUEO DE EDICIÓN)
+      db.ref('torneo').on('value', (snapshot) => {
+        
+        // SI ESTAMOS EDITANDO, IGNORAMOS A FIREBASE TEMPORALMENTE
+        if (this.isEditing) {
+            console.log('⏸️ Editando... Ignorando actualización externa');
+            return;
+        }
 
-  // Si estamos escribiendo en un input, guardamos cuál es
-  if (activeElement && activeElement.tagName === 'INPUT' && activeElement.dataset.matchId) {
-    focusedMatchId = activeElement.dataset.matchId;
-    focusedScoreType = activeElement.dataset.scoreType;
-    focusedGroupId = activeElement.dataset.groupId;
-  }
+        // Se non estamos editando, actualizamos normal
+        const data = snapshot.val();
+        if (data) {
+          this.state = data;
+        } else {
+          this.initEmptyState();
+        }
+        
+        this.sanitizeState();
+        this.renderAll(); 
+      });
 
-  // --- B) ACTUALIZAR DATOS ---
-  const data = snapshot.val();
-  if (data) {
-    this.state = data;
-  } else {
-    this.initEmptyState();
-  }
-  
-  this.sanitizeState();
-  this.renderAll(); 
-
-  // --- C) RESTAURAR (Función interna mejorada) ---
-  const restoreView = () => {
-    // 1. Página general
-    if (pageScroll > 0) {
-      window.scrollTo(0, pageScroll);
-    }
-
-    // 2. TODAS las cajas de grupos
-    Object.keys(scrollStates).forEach(containerId => {
-      const box = document.getElementById(containerId);
-      if (box) {
-        box.scrollTop = scrollStates[containerId];
-      }
-    });
-
-    // 3. Foco en el input
-    if (focusedMatchId && focusedScoreType && focusedGroupId) {
-      const selector = `input[data-group-id="${focusedGroupId}"][data-match-id="${focusedMatchId}"][data-score-type="${focusedScoreType}"]`;
-      const input = document.querySelector(selector);
-      if (input) {
-        input.focus();
-        // Intentar poner cursor al final
-        try { 
-          input.setSelectionRange(input.value.length, input.value.length); 
-        } catch(e) {}
-      }
-    }
-  };
-
-  // Restauración inteligente: espera a que el DOM esté listo
-const restaurarConEspera = () => {
-  // Verificar si las cajas existen
-  const cajasListas = Object.keys(scrollStates).every(id => {
-    const box = document.getElementById(id);
-    return box !== null;
-  });
-  
-  if (cajasListas) {
-    restoreView(); // Si todo está listo, restaura
-  } else {
-    setTimeout(restaurarConEspera, 50); // Si no, espera un poco más
-  }
-};
-
-// Primera restauración inmediata (por si ya está todo)
-requestAnimationFrame(restoreView);
-
-// Restauración con espera inteligente
-setTimeout(restaurarConEspera, 10);
-
-// Restauraciones de seguridad
-setTimeout(restoreView, 100);
-setTimeout(restoreView, 200);
-setTimeout(restoreView, 400);
-}); // <--- ¡ESTE CIERRE ERA LO QUE FALTABA!
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
         this.user = user;
@@ -980,25 +914,48 @@ setTimeout(restoreView, 400);
         this.renderMatchesAndStandings(id); 
       } 
     },
-    
     handleScoreChange: function(event) { 
       const input = event.target; 
       const groupId = input.dataset.groupId; 
       const matchId = input.dataset.matchId; 
+      
+      // 1. BLOQUEAMOS A ESCOITA
+      this.isEditing = true;
+      
       let match = null; 
       for (const round of this.state.groups[groupId].rounds) { 
         match = round.matches.find(m => m.id === matchId); 
         if (match) break; 
       } 
       if (!match) return; 
+      
       const scoreA_input = document.querySelector(`input[data-match-id="${matchId}"][data-score-type="A"]`); 
       const scoreB_input = document.querySelector(`input[data-match-id="${matchId}"][data-score-type="B"]`); 
+      
       match.scoreA = scoreA_input.value === '' ? null : Number(scoreA_input.value); 
       match.scoreB = scoreB_input.value === '' ? null : Number(scoreB_input.value); 
-      this.saveState(); 
+      
+      // 2. ACTUALIZAMOS VISUALMENTE A TÁBOA (SEN REPINTAR TODO)
       this.renderStandings(groupId); 
-      this.checkAutoPlayoffs('2ciclo'); 
-      this.checkAutoPlayoffs('3ciclo'); 
+      
+      // 3. GARDADO INTELIXENTE (Debounce)
+      if (this.saveTimer) clearTimeout(this.saveTimer);
+      
+      this.saveTimer = setTimeout(() => {
+        // Gardamos en Firebase
+        this.saveState(); 
+        
+        // Revisamos se hai playoffs novos
+        this.checkAutoPlayoffs('2ciclo'); 
+        this.checkAutoPlayoffs('3ciclo');
+        
+        // 4. DESBLOQUEAMOS DESPOIS DUN SEGUNDO (Para que non salte co propio eco)
+        setTimeout(() => {
+          this.isEditing = false;
+          console.log('✅ Edición rematada. Volvemos escoitar a nube.');
+        }, 1000);
+        
+      }, 800); // Esperamos 800ms dende que deixas de escribir
     },
     
     handleFairPlayChange: function(event) {
@@ -1006,16 +963,32 @@ setTimeout(restoreView, 400);
       const groupId = checkbox.dataset.groupId;
       const matchId = checkbox.dataset.matchId;
       const team = checkbox.dataset.fairplayTeam;
+      
+      // 1. BLOQUEAMOS
+      this.isEditing = true;
+      
       let match = null;
       for (const round of this.state.groups[groupId].rounds) { 
         match = round.matches.find(m => m.id === matchId); 
         if (match) break; 
       }
       if (!match) return;
+      
       if (team === 'A') { match.fairPlayA = checkbox.checked; } 
       else { match.fairPlayB = checkbox.checked; }
-      this.saveState();
+      
+      // 2. ACTUALIZAR LOCAL
       this.renderStandings(groupId);
+      
+      // 3. GARDAR
+      if (this.saveTimer) clearTimeout(this.saveTimer);
+      
+      this.saveTimer = setTimeout(() => {
+        this.saveState();
+        setTimeout(() => {
+          this.isEditing = false;
+        }, 1000);
+      }, 800);
     },
     
     renderPlayoffs: function() { 
