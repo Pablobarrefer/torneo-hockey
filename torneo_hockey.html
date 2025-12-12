@@ -317,26 +317,26 @@ document.addEventListener('DOMContentLoaded', function() {
       this.isEditing = false;
       this.saveTimer = null;
 
-      // 1. Escoitar cambios na base de datos (CON BLOQUEO DE EDICIÓN)
-      db.ref('torneo').on('value', (snapshot) => {
-        
-        // SI ESTAMOS EDITANDO, IGNORAMOS A FIREBASE TEMPORALMENTE
-        if (this.isEditing) {
-            console.log('⏸️ Editando... Ignorando actualización externa');
-            return;
-        }
-
-        // Se non estamos editando, actualizamos normal
-        const data = snapshot.val();
-        if (data) {
-          this.state = data;
-        } else {
-          this.initEmptyState();
-        }
-        
-        this.sanitizeState();
-        this.renderAll(); 
-      });
+      // 1. Escoitar cambios na base de datos
+db.ref('torneo').on('value', (snapshot) => {
+  
+  // SI ESTAMOS EDITANDO, NO HACER NADA
+  if (this.isEditing) {
+    console.log('⏸️ Editando... No actualizar todavía');
+    return;
+  }
+  
+  // Actualizar datos
+  const data = snapshot.val();
+  if (data) {
+    this.state = data;
+  } else {
+    this.initEmptyState();
+  }
+  
+  this.sanitizeState();
+  this.renderAll(); // <-- renderAll ahora se encarga del scroll
+});
 
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
@@ -442,47 +442,49 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     renderAll: function() {
-      // 1. MEMORIZAR: Antes de tocar nada, gardamos o scroll da páxina e de CADA grupo
-      const pageScroll = window.scrollY;
-      const groupScrolls = {};
-      
-      // Buscamos todas as caixas de partidos e apuntamos onde está a barra
-      document.querySelectorAll('.matches-container').forEach(div => {
-        if (div.id) groupScrolls[div.id] = div.scrollTop;
-      });
+  // 1. MEMORIZAR: Antes de tocar nada, gardamos o scroll da páxina e de CADA grupo
+  const pageScroll = window.scrollY;
+  const groupScrolls = {};
+  
+  // Buscamos todas as caixas de partidos e apuntamos onde está a barra
+  document.querySelectorAll('.matches-container').forEach(div => {
+    if (div.id) groupScrolls[div.id] = div.scrollTop;
+  });
 
-      // 2. PINTAR: Borramos e volvemos crear toda a interface
-      this.updateTitleFromYear();
-      this.renderAllGroups();
-      this.renderPlayoffs();
-      this.renderSummary();
-      this.renderPodium();
-      this.renderGallery();
-      this.applyFilter(this.state.filter);
-      this.applyLigaVisibility();
-      this.updateAdminUI(); 
+  // 2. PINTAR: Borramos e volvemos crear toda a interface
+  this.updateTitleFromYear();
+  this.renderAllGroups();
+  this.renderPlayoffs();
+  this.renderSummary();
+  this.renderPodium();
+  this.renderGallery();
+  this.applyFilter(this.state.filter);
+  this.applyLigaVisibility();
+  this.updateAdminUI(); 
 
-      // 3. RESTAURAR: Volvemos poñer as barras onde estaban
-      // Usamos unha función de restauración "insistente"
-      const restoreScrolls = () => {
-        // Restaurar páxina xeral
-        if(pageScroll > 0) window.scrollTo(0, pageScroll);
-        
-        // Restaurar cada caixa de grupo
-        Object.keys(groupScrolls).forEach(id => {
-          const div = document.getElementById(id);
-          // Só se tiña scroll (maior que 0), volvemos poñelo
-          if (div && groupScrolls[id] > 0) {
-            div.scrollTop = groupScrolls[id];
-          }
-        });
-      };
+  // 3. RESTAURAR: Volvemos poñer as barras onde estaban
+  const restoreScrolls = () => {
+    // Restaurar páxina xeral
+    if (pageScroll > 0) {
+      window.scrollTo(0, pageScroll);
+    }
+    
+    // Restaurar cada caixa de grupo
+    Object.keys(groupScrolls).forEach(id => {
+      const div = document.getElementById(id);
+      if (div && groupScrolls[id] > 0) {
+        div.scrollTop = groupScrolls[id];
+      }
+    });
+  };
 
-      // Executámolo inmediatamente e un pouco despois (50ms) para asegurar que o navegador xa debuxou as caixas
-      restoreScrolls();
-      setTimeout(restoreScrolls, 0);
-      setTimeout(restoreScrolls, 50);
-    },
+  // Ejecutar múltiples veces para asegurar
+  requestAnimationFrame(restoreScrolls);
+  setTimeout(restoreScrolls, 10);
+  setTimeout(restoreScrolls, 50);
+  setTimeout(restoreScrolls, 100);
+  setTimeout(restoreScrolls, 200);
+},
     
     toggleAllLiga: function() {
       const ligaContent = document.getElementById('liga-content');
