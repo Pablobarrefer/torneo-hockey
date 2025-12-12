@@ -275,7 +275,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   
-  // 1. CONFIGURACIÓN DE FIREBASE (As túas chaves reais)
+  // 1. CONFIGURACIÓN DE FIREBASE
   const firebaseConfig = {
     apiKey: "AIzaSyAnLlD1ctd6C0QBTZtdFgpzJ5KRL8ztd5M",
     authDomain: "torneo-hockey.firebaseapp.com",
@@ -309,34 +309,34 @@ document.addEventListener('DOMContentLoaded', function() {
     state: {},
     user: null,
 
-  init: function() {
+    init: function() {
       this.loadTheme();
       this.bindEvents();
       
-      // BANDERA DE CONTROL
+      // BANDERA DE CONTROL (Optimistic UI)
       this.isEditing = false;
       this.saveTimer = null;
 
       // 1. Escoitar cambios na base de datos
-db.ref('torneo').on('value', (snapshot) => {
-  
-  // SI ESTAMOS EDITANDO, NO HACER NADA
-  if (this.isEditing) {
-    console.log('⏸️ Editando... No actualizar todavía');
-    return;
-  }
-  
-  // Actualizar datos
-  const data = snapshot.val();
-  if (data) {
-    this.state = data;
-  } else {
-    this.initEmptyState();
-  }
-  
-  this.sanitizeState();
-  this.renderAll(); // <-- renderAll ahora se encarga del scroll
-});
+      db.ref('torneo').on('value', (snapshot) => {
+        
+        // SI ESTAMOS EDITANDO, NON FACER NADA (Evita saltos)
+        if (this.isEditing) {
+          console.log('⏸️ Editando... Pausa na actualización');
+          return;
+        }
+        
+        // Actualizar datos
+        const data = snapshot.val();
+        if (data) {
+          this.state = data;
+        } else {
+          this.initEmptyState();
+        }
+        
+        this.sanitizeState();
+        this.renderAll(); 
+      });
 
       // 2. Xestionar usuario
       auth.onAuthStateChanged((user) => {
@@ -442,49 +442,46 @@ db.ref('torneo').on('value', (snapshot) => {
     },
 
     renderAll: function() {
-  // 1. MEMORIZAR: Antes de tocar nada, gardamos o scroll da páxina e de CADA grupo
-  const pageScroll = window.scrollY;
-  const groupScrolls = {};
-  
-  // Buscamos todas as caixas de partidos e apuntamos onde está a barra
-  document.querySelectorAll('.matches-container').forEach(div => {
-    if (div.id) groupScrolls[div.id] = div.scrollTop;
-  });
+      // 1. MEMORIZAR: Antes de tocar nada, gardamos o scroll da páxina e de CADA grupo
+      const pageScroll = window.scrollY;
+      const groupScrolls = {};
+      
+      // Buscamos todas as caixas de partidos e apuntamos onde está a barra
+      document.querySelectorAll('.matches-container').forEach(div => {
+        if (div.id) groupScrolls[div.id] = div.scrollTop;
+      });
 
-  // 2. PINTAR: Borramos e volvemos crear toda a interface
-  this.updateTitleFromYear();
-  this.renderAllGroups();
-  this.renderPlayoffs();
-  this.renderSummary();
-  this.renderPodium();
-  this.renderGallery();
-  this.applyFilter(this.state.filter);
-  this.applyLigaVisibility();
-  this.updateAdminUI(); 
+      // 2. PINTAR: Borramos e volvemos crear toda a interface
+      this.updateTitleFromYear();
+      this.renderAllGroups();
+      this.renderPlayoffs();
+      this.renderSummary();
+      this.renderPodium();
+      this.renderGallery();
+      this.applyFilter(this.state.filter);
+      this.applyLigaVisibility();
+      this.updateAdminUI(); 
 
-  // 3. RESTAURAR: Volvemos poñer as barras onde estaban
-  const restoreScrolls = () => {
-    // Restaurar páxina xeral
-    if (pageScroll > 0) {
-      window.scrollTo(0, pageScroll);
-    }
-    
-    // Restaurar cada caixa de grupo
-    Object.keys(groupScrolls).forEach(id => {
-      const div = document.getElementById(id);
-      if (div && groupScrolls[id] > 0) {
-        div.scrollTop = groupScrolls[id];
-      }
-    });
-  };
+      // 3. RESTAURAR: Volvemos poñer as barras onde estaban
+      const restoreScrolls = () => {
+        // Restaurar páxina xeral
+        if(pageScroll > 0) window.scrollTo(0, pageScroll);
+        
+        // Restaurar cada caixa de grupo
+        Object.keys(groupScrolls).forEach(id => {
+          const div = document.getElementById(id);
+          // Só se tiña scroll (maior que 0), volvemos poñelo
+          if (div && groupScrolls[id] > 0) {
+            div.scrollTop = groupScrolls[id];
+          }
+        });
+      };
 
-  // Ejecutar múltiples veces para asegurar
-  requestAnimationFrame(restoreScrolls);
-  setTimeout(restoreScrolls, 10);
-  setTimeout(restoreScrolls, 50);
-  setTimeout(restoreScrolls, 100);
-  setTimeout(restoreScrolls, 200);
-},
+      // Restauración insistente
+      restoreScrolls();
+      setTimeout(restoreScrolls, 10);
+      setTimeout(restoreScrolls, 50);
+    },
     
     toggleAllLiga: function() {
       const ligaContent = document.getElementById('liga-content');
@@ -947,6 +944,9 @@ db.ref('torneo').on('value', (snapshot) => {
         this.renderMatchesAndStandings(id); 
       } 
     },
+    
+    // AQUÍ VAN LAS FUNCIONES QUE FALTAN Y DAN ERROR EN TU CÓDIGO
+    
     handleScoreChange: function(event) { 
       const input = event.target; 
       const groupId = input.dataset.groupId; 
@@ -982,13 +982,14 @@ db.ref('torneo').on('value', (snapshot) => {
         this.checkAutoPlayoffs('2ciclo'); 
         this.checkAutoPlayoffs('3ciclo');
         
-        // 4. DESBLOQUEAMOS DESPOIS DUN SEGUNDO (Para que non salte co propio eco)
+        // 4. DESBLOQUEAMOS DESPOIS DUN SEGUNDO
         setTimeout(() => {
           this.isEditing = false;
           console.log('✅ Edición rematada. Volvemos escoitar a nube.');
         }, 500);
         
       }, 500); // Esperamos 500ms dende que deixas de escribir
+    }, // <--- ESTA COMA FALTABA
     
     handleFairPlayChange: function(event) {
       const checkbox = event.target;
@@ -1021,6 +1022,7 @@ db.ref('torneo').on('value', (snapshot) => {
           this.isEditing = false;
         }, 500);
       }, 500);
+    }, // <--- ESTA COMA Y LLAVE FALTABAN
     
     renderPlayoffs: function() { 
       this.renderPlayoffsForCycle('2ciclo'); 
