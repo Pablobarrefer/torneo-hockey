@@ -1201,7 +1201,142 @@ document.addEventListener('DOMContentLoaded', function() {
       } 
       area.appendChild(cycleContent); 
     },
-    
+
+// --- INICIO BLOQUE RECUPERADO ---
+
+    generatePlayoffForCycle: function(cycle) {
+      console.log(`Iniciando xeración para ${cycle}...`);
+      const mapping = cycle === '2ciclo' ? {levels:['3','4']} : {levels:['5','6']};
+      const bracket = {levels:{}, cycleFinal:null};
+      let matchCount = 0;
+      
+      if (!this.state.playoffs) this.state.playoffs = {};
+
+      mapping.levels.forEach(level => {
+        const groupA = `${level}A`;
+        const groupB = `${level}B`;
+        
+        const topA = this.top2FromGroup(groupA); 
+        const topB = this.top2FromGroup(groupB);
+        const semis = [];
+        
+        // 1º A vs 2º B
+        if(topA.length > 0 && topB.length > 1) {
+             semis.push({ id:`${cycle}_${level}_S1`, a:topA[0], b:topB[1], scoreA:null, scoreB:null, extraTimeA:null, extraTimeB:null, penaltyA:null, penaltyB:null, winner:null });
+             matchCount++;
+        }
+        
+        // 1º B vs 2º A
+        if(topB.length > 0 && topA.length > 1) {
+             semis.push({ id:`${cycle}_${level}_S2`, a:topB[0], b:topA[1], scoreA:null, scoreB:null, extraTimeA:null, extraTimeB:null, penaltyA:null, penaltyB:null, winner:null });
+             matchCount++;
+        }
+        
+        bracket.levels[level] = {semis, final:null, winner:null};
+      });
+      
+      if (matchCount > 0) {
+          this.state.playoffs[cycle] = bracket;
+          this.saveState();
+          this.renderPlayoffs();
+          alert(`✅ Fase final xerada! Creáronse ${matchCount} semifinais.`);
+      } else {
+          alert(`⚠️ Non se puideron xerar cruces.\nRevisa que haxa polo menos 2 equipos nos grupos A e B de cada curso.`);
+      }
+    },
+
+    advanceAndRender: function(cycle) { 
+      this.advancePlayoffsForCycle(cycle); 
+      this.renderPlayoffs(); 
+      this.saveState(); 
+    },
+
+    advancePlayoffsForCycle: function(cycle){
+      const bracket = this.state.playoffs[cycle];
+      if(!bracket) return;
+      
+      const levelOrder = cycle === '2ciclo' ? ['3', '4'] : ['5', '6'];
+      
+      const getWinner = (match) => {
+        if(match.scoreA === null || match.scoreB === null) return null;
+        if(match.scoreA > match.scoreB) return match.a;
+        if(match.scoreB > match.scoreA) return match.b;
+        
+        if(match.scoreA === match.scoreB) {
+          if(match.extraTimeA !== null && match.extraTimeB !== null) {
+            if(match.extraTimeA > match.extraTimeB) return match.a;
+            if(match.extraTimeB > match.extraTimeA) return match.b;
+            if(match.extraTimeA === match.extraTimeB) {
+              if(match.penaltyA !== null && match.penaltyB !== null) {
+                if(match.penaltyA > match.penaltyB) return match.a;
+                if(match.penaltyB > match.penaltyA) return match.b;
+              }
+            }
+          }
+        }
+        return null;
+      };
+      
+      levelOrder.forEach(level => {
+        const lvl = bracket.levels[level];
+        if(!lvl) return;
+        
+        if(lvl.semis && lvl.semis.length > 0) {
+          const winners = [];
+          lvl.semis.forEach(m => {
+            m.winner = getWinner(m);
+            if(m.winner) winners.push(m.winner);
+          });
+          
+          if(winners.length === 2 && !lvl.final) {
+            lvl.final = {
+              id: `${cycle}_${level}_FINAL`,
+              a: winners[0],
+              b: winners[1],
+              scoreA: null, scoreB: null, extraTimeA: null, extraTimeB: null, penaltyA: null, penaltyB: null, winner: null
+            };
+          }
+        }
+        
+        if(lvl.final) {
+          lvl.final.winner = getWinner(lvl.final);
+          if(lvl.final.winner) {
+            lvl.winner = lvl.final.winner;
+          }
+        }
+      });
+      
+      const level1Winner = bracket.levels[levelOrder[0]]?.winner;
+      const level2Winner = bracket.levels[levelOrder[1]]?.winner;
+      
+      if(level1Winner && level2Winner && !bracket.cycleFinal) {
+        bracket.cycleFinal = {
+          id: `${cycle}_CYCLE_FINAL`,
+          a: level1Winner,
+          b: level2Winner,
+          scoreA: null, scoreB: null, extraTimeA: null, extraTimeB: null, penaltyA: null, penaltyB: null, winner: null
+        };
+      }
+      
+      if(bracket.cycleFinal) {
+        bracket.cycleFinal.winner = getWinner(bracket.cycleFinal);
+      }
+    },
+
+    checkAutoPlayoffs: function(cycle) { 
+      const levels = cycle === '2ciclo' ? ['3', '4'] : ['5', '6'];
+      const groups = levels.flatMap(l => [`${l}A`, `${l}B`]);
+      
+      if (groups.every(id => this.state.groups[id] && this.state.groups[id].rounds.length > 0) && 
+          groups.every(id => this.allMatchesCompletedForGroup(id))) { 
+        if (!this.state.playoffs[cycle]) { 
+          this.generatePlayoffForCycle(cycle); 
+        } 
+      } 
+    },
+
+    // --- FIN BLOQUE RECUPERADO ---
+  
     launchConfetti: function() {
       const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#6c5ce7', '#a29bfe', '#fd79a8', '#fdcb6e', '#00b894'];
       const confettiCount = 150;
