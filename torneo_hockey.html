@@ -442,16 +442,16 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     renderAll: function() {
-      // 1. MEMORIZAR: Antes de borrar nada, gardamos o scroll da páxina e de CADA grupo
+      // 1. MEMORIZAR: Antes de tocar nada, gardamos o scroll da páxina e de CADA grupo
       const pageScroll = window.scrollY;
       const groupScrolls = {};
       
-      // Buscamos todas as caixas de partidos e gardamos a súa posición exacta
+      // Buscamos todas as caixas de partidos e apuntamos onde está a barra
       document.querySelectorAll('.matches-container').forEach(div => {
         if (div.id) groupScrolls[div.id] = div.scrollTop;
       });
 
-      // 2. PINTAR: Facemos todo o traballo de debuxo
+      // 2. PINTAR: Borramos e volvemos crear toda a interface
       this.updateTitleFromYear();
       this.renderAllGroups();
       this.renderPlayoffs();
@@ -463,17 +463,25 @@ document.addEventListener('DOMContentLoaded', function() {
       this.updateAdminUI(); 
 
       // 3. RESTAURAR: Volvemos poñer as barras onde estaban
-      // Usamos setTimeout(0) para esperar a que o navegador remate de pintar
-      setTimeout(() => {
-        // Restaurar páxina principal
+      // Usamos unha función de restauración "insistente"
+      const restoreScrolls = () => {
+        // Restaurar páxina xeral
         if(pageScroll > 0) window.scrollTo(0, pageScroll);
         
         // Restaurar cada caixa de grupo
         Object.keys(groupScrolls).forEach(id => {
           const div = document.getElementById(id);
-          if (div) div.scrollTop = groupScrolls[id];
+          // Só se tiña scroll (maior que 0), volvemos poñelo
+          if (div && groupScrolls[id] > 0) {
+            div.scrollTop = groupScrolls[id];
+          }
         });
-      }, 0);
+      };
+
+      // Executámolo inmediatamente e un pouco despois (50ms) para asegurar que o navegador xa debuxou as caixas
+      restoreScrolls();
+      setTimeout(restoreScrolls, 0);
+      setTimeout(restoreScrolls, 50);
     },
     
     toggleAllLiga: function() {
