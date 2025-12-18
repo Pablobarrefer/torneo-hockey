@@ -1251,25 +1251,37 @@ document.addEventListener('DOMContentLoaded', function() {
       this.saveState(); 
     },
 
-    advancePlayoffsForCycle: function(cycle){
+   advancePlayoffsForCycle: function(cycle){
       const bracket = this.state.playoffs[cycle];
-      if(!bracket) return;
+      if(!bracket || !bracket.levels) return;
       
-      const levelOrder = cycle === '2ciclo' ? ['3', '4'] : ['5', '6'];
-      
+      // 1. Helper mellorado para saber quen gaña (con conversión a número)
       const getWinner = (match) => {
-        if(match.scoreA === null || match.scoreB === null) return null;
-        if(match.scoreA > match.scoreB) return match.a;
-        if(match.scoreB > match.scoreA) return match.b;
+        // Se non hai resultado, non hai gañador
+        if(match.scoreA === null || match.scoreA === "" || match.scoreA === undefined || 
+           match.scoreB === null || match.scoreB === "" || match.scoreB === undefined) return null;
         
-        if(match.scoreA === match.scoreB) {
-          if(match.extraTimeA !== null && match.extraTimeB !== null) {
-            if(match.extraTimeA > match.extraTimeB) return match.a;
-            if(match.extraTimeB > match.extraTimeA) return match.b;
-            if(match.extraTimeA === match.extraTimeB) {
-              if(match.penaltyA !== null && match.penaltyB !== null) {
-                if(match.penaltyA > match.penaltyB) return match.a;
-                if(match.penaltyB > match.penaltyA) return match.b;
+        const sA = Number(match.scoreA);
+        const sB = Number(match.scoreB);
+        
+        if(sA > sB) return match.a;
+        if(sB > sA) return match.b;
+        
+        // Desempate (Prórroga/Penaltis)
+        if(sA === sB) {
+          if(match.extraTimeA !== null && match.extraTimeA !== "" && match.extraTimeB !== null && match.extraTimeB !== "") {
+            const etA = Number(match.extraTimeA);
+            const etB = Number(match.extraTimeB);
+            if(etA > etB) return match.a;
+            if(etB > etA) return match.b;
+            
+            // Penaltis
+            if(etA === etB) {
+              if(match.penaltyA !== null && match.penaltyA !== "" && match.penaltyB !== null && match.penaltyB !== "") {
+                const pA = Number(match.penaltyA);
+                const pB = Number(match.penaltyB);
+                if(pA > pB) return match.a;
+                if(pB > pA) return match.b;
               }
             }
           }
@@ -1277,10 +1289,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
       };
       
-      levelOrder.forEach(level => {
-        const lvl = bracket.levels[level];
-        if(!lvl) return;
+      // 2. Procesar cada nivel (detecta automaticamente 3-4 ou 5-6)
+      const levels = Object.keys(bracket.levels); 
+      
+      levels.forEach(lvlKey => {
+        const lvl = bracket.levels[lvlKey];
         
+        // Semifinais -> Final de Nivel
         if(lvl.semis && lvl.semis.length > 0) {
           const winners = [];
           lvl.semis.forEach(m => {
@@ -1288,16 +1303,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if(m.winner) winners.push(m.winner);
           });
           
-          if(winners.length === 2 && !lvl.final) {
-            lvl.final = {
-              id: `${cycle}_${level}_FINAL`,
-              a: winners[0],
-              b: winners[1],
-              scoreA: null, scoreB: null, extraTimeA: null, extraTimeB: null, penaltyA: null, penaltyB: null, winner: null
-            };
+          // Se temos 2 gañadores de semis, aseguramos que existe a final
+          if(winners.length === 2) {
+             if (!lvl.final) {
+                lvl.final = {
+                  id: `${cycle}_${lvlKey}_FINAL`,
+                  a: winners[0],
+                  b: winners[1],
+                  scoreA: null, scoreB: null, extraTimeA: null, extraTimeB: null, penaltyA: null, penaltyB: null, winner: null
+                };
+             }
           }
         }
         
+        // Final de Nivel -> Gañador do Nivel
         if(lvl.final) {
           lvl.final.winner = getWinner(lvl.final);
           if(lvl.final.winner) {
@@ -1306,18 +1325,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       
-      const level1Winner = bracket.levels[levelOrder[0]]?.winner;
-      const level2Winner = bracket.levels[levelOrder[1]]?.winner;
-      
-      if(level1Winner && level2Winner && !bracket.cycleFinal) {
-        bracket.cycleFinal = {
-          id: `${cycle}_CYCLE_FINAL`,
-          a: level1Winner,
-          b: level2Winner,
-          scoreA: null, scoreB: null, extraTimeA: null, extraTimeB: null, penaltyA: null, penaltyB: null, winner: null
-        };
+      // 3. Gañadores de Nivel -> GRAN FINAL DE CICLO
+      // Se hai dous niveis (ex: 5º e 6º), e ambos teñen gañador...
+      if (levels.length >= 2) {
+         const winner1 = bracket.levels[levels[0]]?.winner;
+         const winner2 = bracket.levels[levels[1]]?.winner;
+         
+         if(winner1 && winner2) {
+            if (!bracket.cycleFinal) {
+               bracket.cycleFinal = {
+                 id: `${cycle}_CYCLE_FINAL`,
+                 a: winner1,
+                 b: winner2,
+                 scoreA: null, scoreB: null, extraTimeA: null, extraTimeB: null, penaltyA: null, penaltyB: null, winner: null
+               };
+               console.log("🏆 Gran Final xerada automaticamente!");
+            }
+         }
       }
       
+      // 4. Gran Final -> Campión Absoluto
       if(bracket.cycleFinal) {
         bracket.cycleFinal.winner = getWinner(bracket.cycleFinal);
       }
