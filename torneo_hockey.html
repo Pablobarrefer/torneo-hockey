@@ -217,6 +217,17 @@
   .view-mode .team-entry { padding: 8px; background: #f8f9fa; border-radius: 6px; }
   .view-mode input.name-input { font-weight: bold; color: var(--accent); }
   .liga-content-hidden{display:none!important}
+  .view-mode .img-btns{display:none!important}
+  .img-btns{display:flex;gap:6px;flex-wrap:wrap}
+  .img-btns button{padding:4px 8px;font-size:.8rem}
+  #img-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10000;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:12px}
+  #img-modal.active{display:flex}
+  #img-modal .img-box{background:#fff;border-radius:12px;padding:14px;width:100%;max-width:560px;margin:auto;box-sizing:border-box}
+  #img-canvas{width:100%;height:auto;border-radius:8px;background:#eee;touch-action:manipulation;display:block;max-width:560px}
+  #img-modal .img-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.9rem}
+  #img-modal .img-row input[type=range]{flex:1}
+  #img-modal .img-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}
+  #img-status{font-size:.85rem;color:#444;margin:8px 0}
 </style>
 </head>
 <body data-theme="blue">
@@ -305,12 +316,12 @@
       <div class="title">
         <img src="https://www.edu.xunta.gal/centros/ceipbalaidos/system/files/u2/logo2.JPG" alt="Logo CEIP Balaídos" class="logo">
         <div>
-          <h1 id="mainTitle">🏑 XIX Torneo de Nadal de hóckey CEIP Balaídos</h1>
+          <h1 id="mainTitle">🏑 XXIII Torneo de Nadal de hóckey CEIP Balaídos</h1>
           <p class="subtitle" id="subtitle">Xestiona equipos, resultados e eliminatorias</p>
         </div>
       </div>
       <div class="controls">
-        <input id="schoolYear" class="year-input" type="text" value="2025–2026" title="Curso escolar" style="padding:8px;border-radius:8px;border:1px solid #ddd">
+        <input id="schoolYear" class="year-input" type="text" value="2026–2027" title="Curso escolar" style="padding:8px;border-radius:8px;border:1px solid #ddd">
         <button id="btn-save-year">💾 Gardar</button>
         <button id="btn-print" class="gray">🖨️ Imprimir</button>
         <button id="btn-projector" class="projector-btn">🖥️ Proxector</button>
@@ -428,6 +439,29 @@
 <button id="btn-exit-projector" class="projector-btn" style="display:none;position:fixed;top:10px;right:10px;z-index:1000">⬅️ Saír do Modo Proxector</button>
 
 <!-- FIREBASE SDKs -->
+<input type="file" id="img-file" accept="image/*" style="display:none">
+<div id="img-modal">
+  <div class="img-box">
+    <h3 id="img-title" style="margin:0 0 8px">Imaxe</h3>
+    <canvas id="img-canvas"></canvas>
+    <div id="img-photo-ctrls">
+      <div id="img-status"></div>
+      <div class="img-row"><label for="img-size">Tamaño emoji</label><input type="range" id="img-size" min="60" max="200" value="100"></div>
+      <div class="img-row"><label><input type="checkbox" id="img-comic"> 🎨 Estilo cómic</label></div>
+      <div style="font-size:.78rem;color:#666;margin-top:6px">A foto orixinal non se garda en ningún sitio: só se sube a versión con emojis.</div>
+    </div>
+    <div id="img-shield-ctrls" style="display:none">
+      <div class="img-row"><label for="img-zoom">Zoom</label><input type="range" id="img-zoom" min="100" max="300" value="100"></div>
+      <div class="img-row"><label for="img-px">← →</label><input type="range" id="img-px" min="0" max="100" value="50"></div>
+      <div class="img-row"><label for="img-py">↑ ↓</label><input type="range" id="img-py" min="0" max="100" value="50"></div>
+      <div class="img-row"><label><input type="checkbox" id="img-enh" checked> ✨ Mellorar contraste e fondo branco</label></div>
+    </div>
+    <div class="img-actions">
+      <button type="button" id="img-cancel" class="gray">Cancelar</button>
+      <button type="button" id="img-save">✅ Usar esta imaxe</button>
+    </div>
+  </div>
+</div>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -461,8 +495,8 @@ document.addEventListener('DOMContentLoaded', function() {
       LEVELS: { '3': ['3A', '3B'], '4': ['4A', '4B'], '5': ['5A', '5B'], '6': ['6A', '6B'] },
       CYCLES: { 'c2': ['3', '4'], 'c3': ['5', '6'] },
       THEME_KEY: 'ceip_balaidos_theme',
-      BASE_EDIT_YEAR: 2025,
-      BASE_EDITION_NUM: 19,
+      BASE_EDIT_YEAR: 2018,
+      BASE_EDITION_NUM: 15,
       isViewMode: isViewMode
     },
     state: {},
@@ -587,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     initEmptyState: function() {
-      this.state = { year: '2025–2026', groups: {}, playoffs: { '2ciclo': null, '3ciclo': null }, filter: 'all', collapsedGroups: {}, ligaHidden: false };
+      this.state = { year: '2026–2027', groups: {}, playoffs: { '2ciclo': null, '3ciclo': null }, filter: 'all', collapsedGroups: {}, ligaHidden: false };
       Object.keys(this.config.GROUPS).forEach(g => this.state.groups[g] = { teams: [], rounds: [] });
     },
 
@@ -600,6 +634,29 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!this.state.collapsedGroups) this.state.collapsedGroups = {};
       if (this.state.ligaHidden === undefined) this.state.ligaHidden = false;
       if (this.state.galleryVisible === undefined) this.state.galleryVisible = true;
+      if (!this.state.playoffs) this.state.playoffs = {};
+      Object.keys(this.config.GROUPS).forEach(g => {
+        const grp = this.state.groups[g];
+        if (!grp.teams) grp.teams = [];
+        if (!grp.rounds) grp.rounds = [];
+        grp.rounds.forEach(r => { if (!r.matches) r.matches = []; });
+      });
+    },
+
+    resolveActiveMatch: function(active) {
+      if (active.type === 'group') {
+        const g = this.state.groups[active.groupId];
+        for (const r of ((g && g.rounds) || [])) {
+          const m = (r.matches || []).find(x => x.id === active.matchId);
+          if (m) return m;
+        }
+        return null;
+      }
+      const b = this.state.playoffs && this.state.playoffs[active.cycle];
+      if (!b) return null;
+      if (active.stage === 'semi') return b.levels?.[active.level]?.semis?.[active.index] || null;
+      if (active.stage === 'final') return b.levels?.[active.level]?.final || null;
+      return b.cycleFinal || null;
     },
 
     /* =======================================================
@@ -613,6 +670,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (div.id) groupScrolls[div.id] = div.scrollTop;
       });
 
+      const yearInput = document.getElementById('schoolYear');
+      if (yearInput && this.state.year && document.activeElement !== yearInput) yearInput.value = this.state.year;
       this.updateTitleFromYear();
       this.renderAllGroups();
       this.renderPlayoffs();
@@ -685,7 +744,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const item = document.createElement('div');
           item.className = 'gallery-item';
           item.innerHTML = `
-            <img src="${team.photo}" alt="${team.name}" onerror="this.parentElement.style.display='none'">
+            <img ${this.imgAttrs(team.photo)} alt="${team.name}" onerror="this.parentElement.style.display='none'">
             <div class="gallery-item-name">${this.getTeamShield(team)} ${team.name}</div>
             <div style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:4px">Grupo ${team.group}</div>
           `;
@@ -757,25 +816,30 @@ document.addEventListener('DOMContentLoaded', function() {
       const entry = document.createElement('div'); 
       entry.className = 'team-entry'; 
       entry.innerHTML = `
-        <img src="${shieldUrl || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" 
+        <img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
              class="shield-preview" 
              alt="escudo" 
              onerror="this.style.display='none'" 
              style="display:${shieldUrl ? 'block' : 'none'}">
         <div class="inputs-wrapper">
           <input type="text" class="name-input" value="${name}" placeholder="${placeholder}">
+          <div class="img-btns"><button type="button" class="gray btn-cam-shield">🛡️ Escudo (cámara)</button><button type="button" class="gray btn-cam-photo">📷 Foto equipo</button></div>
           <input type="url" class="shield-input" value="${shieldUrl || ''}" placeholder="URL do Escudo">
           <input type="url" class="photo-input" value="${photoUrl || ''}" placeholder="📷 URL da Foto do Equipo">
-          <img src="${photoUrl || ''}" class="photo-preview ${photoUrl ? 'visible' : ''}" alt="foto equipo" onerror="this.style.display='none'">
+          <img class="photo-preview ${photoUrl ? 'visible' : ''}" alt="foto equipo" onerror="this.style.display='none'">
         </div>
       `; 
       
+      const app = this;
       const shieldInput = entry.querySelector('.shield-input');
       const shieldPreview = entry.querySelector('.shield-preview');
+      if (shieldUrl) app.setImg(shieldPreview, shieldUrl);
+      entry.querySelector('.btn-cam-shield').addEventListener('click', () => app.openImageTool('shield', entry));
+      entry.querySelector('.btn-cam-photo').addEventListener('click', () => app.openImageTool('photo', entry));
       shieldInput.addEventListener('input', function() {
         const url = this.value.trim();
         if(url) {
-          shieldPreview.src = url;
+          app.setImg(shieldPreview, url);
           shieldPreview.style.display = 'block';
         } else {
           shieldPreview.style.display = 'none';
@@ -784,10 +848,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const photoInput = entry.querySelector('.photo-input');
       const photoPreview = entry.querySelector('.photo-preview');
+      if (photoUrl) app.setImg(photoPreview, photoUrl);
       photoInput.addEventListener('input', function() {
         const url = this.value.trim();
         if(url) {
-          photoPreview.src = url;
+          photoPreview.style.display = '';
+          app.setImg(photoPreview, url);
           photoPreview.classList.add('visible');
         } else {
           photoPreview.classList.remove('visible');
@@ -798,7 +864,274 @@ document.addEventListener('DOMContentLoaded', function() {
     
     getTeamShield: function(team) { 
       if (!team) return ''; 
-      return `<img src="${team.shield || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" class="shield-image" alt="escudo" onerror="this.style.display='none'">`;
+      return `<img ${this.imgAttrs(team.shield)} class="shield-image" alt="escudo" onerror="this.style.display='none'">`;
+    },
+
+    /* =======================================================
+       IMAXES (fotos de equipo e escudos) — gardadas en torneo_img/{clave}
+       ======================================================= */
+    PLACEHOLDER: 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
+    imgCache: {},
+    imgPending: {},
+    imgTool: null,
+    EMOJIS: ['😀','😎','🤩','🥳','😺','🐵','🐼','🐯','🐸','😄','😁','🤠'],
+
+    imgAttrs: function(v) {
+      if (v && v.indexOf('fb:') === 0) {
+        const k = v.slice(3);
+        this.fetchImg(k);
+        return `src="${this.imgCache[k] || this.PLACEHOLDER}" data-fb="${k}"`;
+      }
+      return `src="${v || this.PLACEHOLDER}"`;
+    },
+
+    fetchImg: function(k) {
+      if (k in this.imgCache || this.imgPending[k]) return;
+      this.imgPending[k] = true;
+      db.ref('torneo_img/' + k).once('value').then(snap => {
+        const v = snap.val() || '';
+        if (v) this.imgCache[k] = v;
+        delete this.imgPending[k];
+        if (v) document.querySelectorAll('img[data-fb="' + k + '"]').forEach(i => { i.src = v; i.style.display = ''; });
+      }).catch(() => { delete this.imgPending[k]; });
+    },
+
+    setImg: function(el, v) {
+      if (v && v.indexOf('fb:') === 0) {
+        const k = v.slice(3);
+        el.dataset.fb = k;
+        el.src = this.imgCache[k] || this.PLACEHOLDER;
+        this.fetchImg(k);
+      } else {
+        delete el.dataset.fb;
+        el.src = v || this.PLACEHOLDER;
+      }
+    },
+
+    openImageTool: function(mode, entry) {
+      this.imgTool = { mode: mode, entry: entry, src: null, faces: [], scale: 1, comic: false, comicCanvas: null };
+      const f = document.getElementById('img-file');
+      f.value = '';
+      f.click();
+    },
+
+    onImageFile: async function(file) {
+      const t = this.imgTool;
+      if (!file || !t) return;
+      let bmp;
+      try {
+        bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      } catch (e) {
+        try {
+          bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+        } catch (e2) { alert('Non se puido abrir a imaxe.'); this.imgTool = null; return; }
+      }
+      const w0 = bmp.naturalWidth || bmp.width, h0 = bmp.naturalHeight || bmp.height;
+      const maxSide = t.mode === 'photo' ? 1280 : 1024;
+      const k = Math.min(1, maxSide / Math.max(w0, h0));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(w0 * k)); c.height = Math.max(1, Math.round(h0 * k));
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (bmp.close) bmp.close();
+      t.src = c;
+
+      document.getElementById('img-title').textContent = t.mode === 'photo' ? '📷 Foto do equipo' : '🛡️ Escudo do equipo';
+      document.getElementById('img-photo-ctrls').style.display = t.mode === 'photo' ? 'block' : 'none';
+      document.getElementById('img-shield-ctrls').style.display = t.mode === 'shield' ? 'block' : 'none';
+      document.getElementById('img-size').value = 100;
+      document.getElementById('img-comic').checked = false;
+      document.getElementById('img-zoom').value = 100;
+      document.getElementById('img-px').value = 50;
+      document.getElementById('img-py').value = 50;
+      document.getElementById('img-enh').checked = true;
+      document.getElementById('img-modal').classList.add('active');
+      if (t.mode === 'photo') this.detectFaces(); else this.renderShield();
+    },
+
+    loadFaceApi: function() {
+      if (this._faceReady) return this._faceReady;
+      const base = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/';
+      this._faceReady = new Promise((res, rej) => {
+        if (window.faceapi) return res();
+        const sc = document.createElement('script');
+        sc.src = base + 'dist/face-api.js';
+        sc.onload = res;
+        sc.onerror = () => rej(new Error('script'));
+        document.head.appendChild(sc);
+      }).then(() => faceapi.nets.tinyFaceDetector.loadFromUri(base + 'model'));
+      this._faceReady.catch(() => { this._faceReady = null; });
+      return this._faceReady;
+    },
+
+    randEmoji: function() { return this.EMOJIS[Math.floor(Math.random() * this.EMOJIS.length)]; },
+
+    detectFaces: async function() {
+      const t = this.imgTool;
+      const st = document.getElementById('img-status');
+      t.faces = [];
+      st.textContent = '🔍 Buscando caras…';
+      this.renderPhoto();
+      try {
+        await this.loadFaceApi();
+        if (this.imgTool !== t) return;
+        const dets = await faceapi.detectAllFaces(t.src, new faceapi.TinyFaceDetectorOptions({ inputSize: 608, scoreThreshold: 0.3 }));
+        t.faces = dets.map(d => {
+          const b = d.box;
+          return { cx: b.x + b.width / 2, cy: b.y + b.height / 2, r: Math.max(b.width, b.height) * 0.68, e: this.randEmoji() };
+        });
+        st.textContent = '✅ ' + t.faces.length + ' caras detectadas. REVISA: toca unha cara sen emoji para poñelo, ou un emoji para quitalo.';
+      } catch (e) {
+        st.textContent = '⚠️ Non se puido cargar o detector automático. Toca o centro de cada cara para poñer un emoji.';
+      }
+      this.renderPhoto();
+    },
+
+    getComicBase: function() {
+      const t = this.imgTool;
+      if (t.comicCanvas) return t.comicCanvas;
+      const c = document.createElement('canvas');
+      c.width = t.src.width; c.height = t.src.height;
+      const x = c.getContext('2d');
+      x.drawImage(t.src, 0, 0);
+      const id = x.getImageData(0, 0, c.width, c.height), d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        for (let j = 0; j < 3; j++) {
+          let v = g + (d[i + j] - g) * 1.4;
+          v = Math.max(0, Math.min(255, v));
+          d[i + j] = Math.round(v / 51) * 51;
+        }
+      }
+      x.putImageData(id, 0, 0);
+      t.comicCanvas = c;
+      return c;
+    },
+
+    renderPhoto: function() {
+      const t = this.imgTool;
+      if (!t || t.mode !== 'photo') return;
+      const cv = document.getElementById('img-canvas');
+      cv.width = t.src.width; cv.height = t.src.height;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(t.comic ? this.getComicBase() : t.src, 0, 0);
+      t.faces.forEach(f => {
+        const size = Math.round(f.r * 2 * t.scale);
+        ctx.font = size + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(f.e, f.cx, f.cy + size * 0.06);
+      });
+    },
+
+    onCanvasTap: function(e) {
+      const t = this.imgTool;
+      if (!t || t.mode !== 'photo') return;
+      const cv = document.getElementById('img-canvas');
+      const rc = cv.getBoundingClientRect();
+      const x = (e.clientX - rc.left) * cv.width / rc.width;
+      const y = (e.clientY - rc.top) * cv.height / rc.height;
+      let hit = -1, best = 1e9;
+      t.faces.forEach((f, i) => {
+        const d = Math.hypot(x - f.cx, y - f.cy);
+        if (d <= f.r * t.scale && d < best) { best = d; hit = i; }
+      });
+      if (hit >= 0) {
+        t.faces.splice(hit, 1);
+      } else {
+        const rs = t.faces.map(f => f.r).sort((a, b) => a - b);
+        const r = rs.length ? rs[Math.floor(rs.length / 2)] : Math.max(cv.width, cv.height) * 0.06;
+        t.faces.push({ cx: x, cy: y, r: r, e: this.randEmoji() });
+      }
+      document.getElementById('img-status').textContent = '👥 ' + t.faces.length + ' emojis postos. Toca unha cara sen emoji para engadilo, ou un emoji para quitalo.';
+      this.renderPhoto();
+    },
+
+    renderShield: function() {
+      const t = this.imgTool;
+      if (!t || t.mode !== 'shield') return;
+      const N = 320;
+      const cv = document.getElementById('img-canvas');
+      cv.width = N; cv.height = N;
+      const ctx = cv.getContext('2d');
+      const s = t.src;
+      const zoom = document.getElementById('img-zoom').value / 100;
+      const side = Math.min(s.width, s.height) / zoom;
+      const px = document.getElementById('img-px').value / 100;
+      const py = document.getElementById('img-py').value / 100;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, N, N);
+      ctx.drawImage(s, (s.width - side) * px, (s.height - side) * py, side, side, 0, 0, N, N);
+      if (document.getElementById('img-enh').checked) this.enhanceShield(ctx, N);
+    },
+
+    enhanceShield: function(ctx, N) {
+      const id = ctx.getImageData(0, 0, N, N), d = id.data, n = N * N;
+      const hist = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)];
+      const lum = new Uint32Array(256);
+      for (let i = 0; i < d.length; i += 4) {
+        hist[0][d[i]]++; hist[1][d[i + 1]]++; hist[2][d[i + 2]]++;
+        lum[(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0]++;
+      }
+      const pct = (h, p) => { let a = 0; const lim = p * n; for (let v = 0; v < 256; v++) { a += h[v]; if (a >= lim) return v; } return 255; };
+      const lo = Math.min(100, pct(lum, 0.01));
+      const hi = [0, 1, 2].map(c => Math.max(lo + 60, Math.min(255, Math.max(140, pct(hist[c], 0.5)))));
+      for (let i = 0; i < d.length; i += 4) {
+        let r = [0, 1, 2].map(c => Math.max(0, Math.min(255, (d[i + c] - lo) * 255 / (hi[c] - lo))));
+        const g = 0.299 * r[0] + 0.587 * r[1] + 0.114 * r[2];
+        for (let c = 0; c < 3; c++) d[i + c] = Math.max(0, Math.min(255, g + (r[c] - g) * 1.25));
+      }
+      ctx.putImageData(id, 0, 0);
+    },
+
+    closeImageTool: function() {
+      document.getElementById('img-modal').classList.remove('active');
+      this.imgTool = null;
+    },
+
+    saveImageTool: function() {
+      const t = this.imgTool;
+      if (!t) return;
+      const cv = document.getElementById('img-canvas');
+      let out;
+      if (t.mode === 'photo') {
+        const k = Math.min(1, 960 / Math.max(cv.width, cv.height));
+        const o = document.createElement('canvas');
+        o.width = Math.round(cv.width * k); o.height = Math.round(cv.height * k);
+        o.getContext('2d').drawImage(cv, 0, 0, o.width, o.height);
+        let q = 0.75;
+        out = o.toDataURL('image/jpeg', q);
+        while (out.length > 180000 && q > 0.4) { q -= 0.1; out = o.toDataURL('image/jpeg', q); }
+      } else {
+        out = cv.toDataURL('image/jpeg', 0.9);
+      }
+      const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const entry = t.entry, mode = t.mode;
+      const btn = document.getElementById('img-save');
+      btn.disabled = true; btn.textContent = 'Subindo…';
+      db.ref('torneo_img/' + key).set(out).then(() => {
+        this.imgCache[key] = out;
+        const input = entry.querySelector(mode === 'photo' ? '.photo-input' : '.shield-input');
+        input.value = 'fb:' + key;
+        input.dispatchEvent(new Event('input'));
+        this.closeImageTool();
+        const list = entry.parentElement;
+        const gid = list && list.id ? list.id.replace('teams-', '') : null;
+        if (gid && this.state.groups[gid]) { this.saveTeams(gid); } else { this.showBanner('Imaxe subida. Preme Gardar equipos.'); }
+      }).catch(err => {
+        alert('Non se puido subir a imaxe (¿tes a sesión iniciada?): ' + err.message);
+      }).then(() => { btn.disabled = false; btn.textContent = '✅ Usar esta imaxe'; });
+    },
+
+    bindImageTool: function() {
+      const self = this;
+      document.getElementById('img-file').addEventListener('change', function() { self.onImageFile(this.files[0]); });
+      document.getElementById('img-canvas').addEventListener('click', e => self.onCanvasTap(e));
+      document.getElementById('img-size').addEventListener('input', function() { if (self.imgTool) { self.imgTool.scale = this.value / 100; self.renderPhoto(); } });
+      document.getElementById('img-comic').addEventListener('change', function() { if (self.imgTool) { self.imgTool.comic = this.checked; self.renderPhoto(); } });
+      ['img-zoom', 'img-px', 'img-py'].forEach(i => document.getElementById(i).addEventListener('input', () => self.renderShield()));
+      document.getElementById('img-enh').addEventListener('change', () => self.renderShield());
+      document.getElementById('img-cancel').addEventListener('click', () => self.closeImageTool());
+      document.getElementById('img-save').addEventListener('click', () => self.saveImageTool());
     },
     
     renderMatchesAndStandings: function(id) { 
@@ -907,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       const fairPlayWinner = fairPlayScores.reduce((max, s) => s.fpPoints > max.fpPoints ? s : max, fairPlayScores[0]);
       
-      const hasData = g.rounds && g.rounds.length > 0 && g.rounds.some(r => r.matches.some(m => m.scoreA !== null));
+      const hasData = g.rounds && g.rounds.length > 0 && g.rounds.some(r => r.matches.some(m => m.scoreA != null));
       if (!hasData) return;
       
       const awardsSection = document.createElement('div');
@@ -992,7 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
       teamIndices.forEach(idx => { h2h[idx] = { PTS: 0, GF: 0, GA: 0, GD: 0 }; });
       
       (group.rounds || []).flatMap(r => r.matches || []).forEach(m => {
-        if (m.scoreA === null || m.scoreB === null) return;
+        if (m.scoreA == null || m.scoreB == null) return;
         const isRelevantMatch = teamIndices.includes(m.a) && teamIndices.includes(m.b);
         if (!isRelevantMatch) return;
         
@@ -1014,14 +1347,14 @@ document.addEventListener('DOMContentLoaded', function() {
     allMatchesCompletedForGroup: function(id) { 
       const g = this.state.groups[id]; 
       if (!g || !g.rounds || g.rounds.length === 0) return false; 
-      return g.rounds.flatMap(r => r.matches).every(m => m.scoreA !== null && m.scoreB !== null); 
+      return g.rounds.flatMap(r => r.matches).every(m => m.scoreA != null && m.scoreB != null); 
     },
     
     renderSummary: function() { 
       const el = document.getElementById('summary'); 
       const allGroups = Object.keys(this.config.GROUPS); 
       const nTeams = allGroups.reduce((a, id) => a + (this.state.groups[id]?.teams?.length || 0), 0); 
-      const nMatches = allGroups.reduce((a, id) => a + (this.state.groups[id]?.rounds || []).flatMap(r => r.matches).filter(x => x.scoreA !== null).length, 0); 
+      const nMatches = allGroups.reduce((a, id) => a + (this.state.groups[id]?.rounds || []).flatMap(r => r.matches).filter(x => x.scoreA != null).length, 0); 
       el.innerHTML = `<div>Equipos inscritos: <b>${nTeams}</b></div><div>Encontros disputados: <b>${nMatches}</b></div>`; 
     },
 
@@ -1238,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!teamA || !teamB) return; 
         
         const disabledAttr = this.user ? '' : 'disabled';
-        const isTied = match.scoreA !== null && match.scoreB !== null && match.scoreA === match.scoreB;
+        const isTied = match.scoreA != null && match.scoreB != null && match.scoreA === match.scoreB;
         
         div.innerHTML = `
           <div style="flex:1"><b>${this.getTeamShield(teamA)} ${teamA.name}</b></div>
@@ -1271,7 +1604,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
               </div>
             ` : ''}
-            ${isTied && match.extraTimeA !== null && match.extraTimeB !== null && match.extraTimeA === match.extraTimeB ? `
+            ${isTied && match.extraTimeA != null && match.extraTimeB != null && match.extraTimeA === match.extraTimeB ? `
               <div class="penalty-section" style="width:100%">
                 <div class="penalty-label">🥅 Lanzamentos de Penaltis</div>
                 <div class="score-inputs" style="justify-content:center">
@@ -1325,7 +1658,7 @@ document.addEventListener('DOMContentLoaded', function() {
               this.advanceAndRender(cycle);
             };
             penaltyInputs[1].onchange = () => {
-              match.penaltyB = penaltyInputs[0].value === '' ? null : Number(penaltyInputs[1].value);
+              match.penaltyB = penaltyInputs[1].value === '' ? null : Number(penaltyInputs[1].value);
               this.advanceAndRender(cycle);
             };
           }
@@ -1582,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       g.rounds.forEach(round => {
         (round.matches || []).forEach(m => {
-          if (m.scoreA === null || m.scoreB === null) return;
+          if (m.scoreA == null || m.scoreB == null) return;
           if (m.a === teamIdx) {
             if (m.scoreA > m.scoreB) { currentStreak++; if (currentStreak > maxStreak) maxStreak = currentStreak; }
             else { currentStreak = 0; }
@@ -1726,8 +2059,8 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const shieldA = document.getElementById('sb-home-shield');
       const shieldB = document.getElementById('sb-away-shield');
-      shieldA.src = teamA.shield || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
-      shieldB.src = teamB.shield || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+      this.setImg(shieldA, teamA.shield);
+      this.setImg(shieldB, teamB.shield);
       shieldA.style.display = teamA.shield ? 'block' : 'none';
       shieldB.style.display = teamB.shield ? 'block' : 'none';
 
@@ -1817,13 +2150,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     saveAndFinishScoreboard: function() {
       const active = this.scoreboard.activeMatch;
-      if(!active || !active.matchRef) {
+      if(!active) {
         this.closeScoreboard();
         return;
       }
 
-      active.matchRef.scoreA = this.scoreboard.homeScore;
-      active.matchRef.scoreB = this.scoreboard.awayScore;
+      const match = this.resolveActiveMatch(active);
+      if (!match) {
+        this.showBanner('Non se atopou o partido. Revisa o resultado.');
+        this.closeScoreboard();
+        return;
+      }
+      match.scoreA = this.scoreboard.homeScore;
+      match.scoreB = this.scoreboard.awayScore;
 
       if(active.type === 'group') {
         this.saveState();
@@ -1869,7 +2208,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     confirmReset: function() { 
       if (confirm('Estás seguro de que queres reiniciar todo o torneo? Borraranse todos os datos de Firebase.')) {
-        db.ref('torneo').remove()
+        Promise.all([db.ref('torneo').remove(), db.ref('torneo_img').remove()])
           .then(() => {
              this.initEmptyState();
              this.renderAll();
@@ -1895,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     
     exportToExcel: function() {
-      let csv = '\uFEFFXIX TORNEO DE NADAL\nCurso: ' + (this.state.year||'') + '\n\n';
+      let csv = '\uFEFF' + document.getElementById('mainTitle').textContent.replace('🏑 ', '').toUpperCase() + '\nCurso: ' + (this.state.year||'') + '\n\n';
       Object.keys(this.config.GROUPS).forEach(groupId => {
         const stats = this.computeStatsForGroup(groupId);
         if (!stats.length) return;
@@ -1935,7 +2274,7 @@ document.addEventListener('DOMContentLoaded', function() {
       bannerTimeout = setTimeout(() => { b.style.display = 'none'; }, time); 
     },
     
-    updateTitleFromYear: function() { 
+    updateTitleFromYear: function(override) { 
       const toRoman = num => { 
         if (num <= 0) return ''; 
         const r = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]; 
@@ -1950,7 +2289,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const m = str.match(/(\d{4})/); 
         return m ? Number(m[1]) : null; 
       }; 
-      const y = this.state.year || document.getElementById('schoolYear').value || '2025–2026'; 
+      const y = override || this.state.year || document.getElementById('schoolYear').value || '2026–2027'; 
       const fy = parseFirstYear(y) || this.config.BASE_EDIT_YEAR; 
       const ed = this.config.BASE_EDITION_NUM + (fy - this.config.BASE_EDIT_YEAR); 
       const ro = toRoman(ed); 
@@ -1977,8 +2316,14 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     
     bindEvents: function() {
+      this.bindImageTool();
       const btnSaveYear = document.getElementById('btn-save-year');
       if(btnSaveYear) btnSaveYear.addEventListener('click', () => this.saveYear());
+      const yearField = document.getElementById('schoolYear');
+      if (yearField) {
+        yearField.addEventListener('input', () => { const v = yearField.value.trim(); if (/\d{4}/.test(v)) this.updateTitleFromYear(v); });
+        yearField.addEventListener('keydown', e => { if (e.key === 'Enter') this.saveYear(); });
+      }
 
       const btnPrint = document.getElementById('btn-print');
       if(btnPrint) btnPrint.addEventListener('click', () => this.printPage());
