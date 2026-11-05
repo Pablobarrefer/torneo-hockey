@@ -428,7 +428,10 @@
         
         <!-- GALERÍA DE EQUIPOS -->
         <div class="card" id="gallery-section" style="display:none">
-          <h3 style="margin:0;color:var(--accent)">📷 Galería de Equipos</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <h3 style="margin:0;color:var(--accent)">📷 Galería de Equipos</h3>
+            <button id="btn-gallery-open" class="gray" style="padding:6px 12px;font-size:0.85rem">📷 Ver galería</button>
+          </div>
           <div id="galleryArea" class="gallery-grid"></div>
         </div>
       </div>
@@ -739,8 +742,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
       
-      if ((this.config.isViewMode || this.state.galleryVisible) && allTeamsWithPhotos.length > 0) {
+      const openBtn = document.getElementById('btn-gallery-open');
+      if (allTeamsWithPhotos.length > 0) {
         gallerySection.style.display = 'block';
+        if (openBtn) openBtn.textContent = this.galleryOpen ? '🔼 Ocultar galería' : '📷 Ver galería (' + allTeamsWithPhotos.length + ')';
+        if (!this.galleryOpen) return;
         allTeamsWithPhotos.forEach(team => {
           const item = document.createElement('div');
           item.className = 'gallery-item';
@@ -827,7 +833,6 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="img-btns"><button type="button" class="gray btn-cam-shield">🛡️ Escudo (cámara)</button><button type="button" class="gray btn-cam-photo">📷 Foto equipo</button></div>
           <input type="url" class="shield-input" value="${shieldUrl || ''}" placeholder="URL do Escudo">
           <input type="url" class="photo-input" value="${photoUrl || ''}" placeholder="📷 URL da Foto do Equipo">
-          <img class="photo-preview ${photoUrl ? 'visible' : ''}" alt="foto equipo" onerror="this.style.display='none'">
         </div>
       `; 
       
@@ -848,18 +853,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
       const photoInput = entry.querySelector('.photo-input');
-      const photoPreview = entry.querySelector('.photo-preview');
-      if (photoUrl) app.setImg(photoPreview, photoUrl);
-      photoInput.addEventListener('input', function() {
-        const url = this.value.trim();
-        if(url) {
-          photoPreview.style.display = '';
-          app.setImg(photoPreview, url);
-          photoPreview.classList.add('visible');
-        } else {
-          photoPreview.classList.remove('visible');
-        }
-      });
       list.appendChild(entry); 
     },
     
@@ -871,6 +864,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /* =======================================================
        IMAXES (fotos de equipo e escudos) — gardadas en torneo_img/{clave}
        ======================================================= */
+    galleryOpen: false,
     PLACEHOLDER: 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
     imgCache: {},
     imgPending: {},
@@ -2362,14 +2356,11 @@ document.addEventListener('DOMContentLoaded', function() {
       const btnLogout = document.getElementById('btn-logout');
       if(btnLogout) btnLogout.addEventListener('click', () => this.logout());
 
+      const toggleGallery = () => { this.galleryOpen = !this.galleryOpen; this.renderGallery(); };
       const btnGallery = document.getElementById('btn-toggle-gallery');
-      if (btnGallery) {
-        btnGallery.addEventListener('click', () => {
-          this.state.galleryVisible = !this.state.galleryVisible;
-          this.saveState();
-          this.renderGallery();
-        });
-      }
+      if (btnGallery) btnGallery.addEventListener('click', toggleGallery);
+      const btnGalleryOpen = document.getElementById('btn-gallery-open');
+      if (btnGalleryOpen) btnGalleryOpen.addEventListener('click', toggleGallery);
       
       const btnShowImport = document.getElementById('btn-show-import');
       if (btnShowImport) btnShowImport.addEventListener('click', () => { document.getElementById('import-area').style.display = 'block'; });
