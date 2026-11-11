@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🏑 XIX Torneo de Nadal de hóckey CEIP Balaídos – Xestión</title>
+<title>🏑 XXIII Torneo de Nadal de hóckey CEIP Balaídos – Xestión</title>
 <style>
   html,body{margin:0;padding:0;width:100%;overflow-x:hidden;font-family:Inter,"Segoe UI",Roboto,system-ui,-apple-system,"Helvetica Neue",Arial;background:linear-gradient(180deg,#f0f9ff,#fff);color:#0f172a}
   :root{--accent:#0056b3;--accent-2:#00a8ff;--muted:#6b7280;--card:#ffffff;--gold:#ffc107;--success:#28a745;--danger:#dc3545}
@@ -2289,6 +2289,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const ed = this.config.BASE_EDITION_NUM + (fy - this.config.BASE_EDIT_YEAR); 
       const ro = toRoman(ed); 
       document.getElementById('mainTitle').textContent = `🏑 ${ro ? ro + ' ' : ''}Torneo de Nadal de hóckey CEIP Balaídos`; 
+      document.title = `🏑 ${ro ? ro + ' ' : ''}Torneo de Nadal de hóckey CEIP Balaídos – Xestión`;
       document.getElementById('subtitle').textContent = `Curso escolar: ${y}`; 
     },
     
