@@ -2,7 +2,23 @@
 
 Ferramenta web para a xestión en tempo real do Torneo de Nadal de hóckey. Conectada a Google Firebase para actualizacións instantáneas e saltar filtros escolares.
 
-Ligazón da aplicación: https://pablobarrefer.github.io/torneo-hockey/torneo_hockey.html
+## 🔗 Ligazóns
+
+| Para que | Ligazón |
+|---|---|
+| 🏑 App do torneo (profesor, con login) | https://pablobarrefer.github.io/torneo-hockey/torneo_hockey.html |
+| 🎓 App do torneo (alumnado, só lectura) | https://pablobarrefer.github.io/torneo-hockey/torneo_hockey.html?modo=ver |
+| 🎲 Sorteo de equipos | https://pablobarrefer.github.io/torneo-hockey/sorteo_equipos.html |
+
+Ficheiros do repositorio: `torneo_hockey.html` (app), `sorteo_equipos.html` (sorteo) e este `README.md`. Para actualizar, sube o ficheiro novo co mesmo nome desde GitHub (Add file → Upload files) e recarga a páxina con Cmd+Shift+R.
+
+## ✅ Orde recomendada de uso
+
+1. **Sorteo:** en `sorteo_equipos.html`, carga a lista de cada clase (unha vez), sortea diante do alumnado e garda os equipos.
+2. **Enviar ao torneo:** co botón «🏑 Enviar ao torneo» os equipos pasan ao grupo correspondente da app (só os nomes dos equipos).
+3. **Torneo:** na app, entra como profesor, xera as xornadas de cada grupo e engade escudos e fotos se se quere.
+4. **Partidos:** introduce resultados (ou usa o ⏱️ marcador) e xera as eliminatorias cando remate cada fase.
+5. **Copia de seguridade** antes de cada fase importante.
 
 ## 🚀 Como funciona
 
@@ -61,6 +77,12 @@ Ferramenta independente para facer o sorteo diante do alumnado: `sorteo_equipos.
 * Filtros por ciclo e curso, e ocultar a liga.
 
 ## 🛠️ Xestión técnica
+
+### Seguridade
+
+* **Lectura aberta:** calquera persoa coa ligazón pode ver o torneo (é o que permite que o alumnado entre sen login). Na base de datos só hai resultados, nomes de equipo e imaxes con emojis; **nunca nomes do alumnado**.
+* **Escritura só do profesor:** as regras de Firebase (Realtime Database → Regras) deben permitir escribir só ao usuario do profesor, por exemplo `".write": "auth != null && auth.uid === 'UID_DO_PROFESOR'"`, e a lectura aberta `".read": true`. Firebase seguirá avisando de que a lectura é pública; é o comportamento desexado.
+* O aviso «regras inseguras» de Firebase polo acceso de lectura pode ignorarse.
 
 ### Copias de seguridade
 
