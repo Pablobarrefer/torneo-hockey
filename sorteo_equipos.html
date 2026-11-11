@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="gl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorteo de equipos</title>
+<style>
+:root{--bg:#eef3f9;--card:#fff;--ink:#14213d;--muted:#5c6b82;--accent:#0056b3;--girl:#d6336c;--boy:#1c7ed6;--line:#d9e1ec}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.4}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+h1{margin:8px 0 4px;color:var(--accent);font-size:1.6rem}
+h3{margin:0 0 8px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 14px;font-size:.95rem}
+.card{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(20,33,61,.08);margin-bottom:14px}
+label{display:block;font-weight:600;margin:10px 0 4px}
+textarea,input[type=text],input[type=number],input[type=email],input[type=password],select{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:110px;resize:vertical}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:8px}
+.row>div{flex:1;min-width:170px}
+.row>.auto{flex:0 0 auto;min-width:0}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:var(--accent);color:#fff;font-weight:600}
+button.gray{background:#64748b}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button.danger{background:#c0392b}
+button.sm{padding:6px 10px;font-size:.85rem}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.big{font-size:1.15rem;padding:14px 26px}
+.info{margin:10px 0;padding:10px 12px;border-radius:10px;background:#eaf2ff;color:#173a6b;font-size:.92rem;min-height:40px}
+.info.err{background:#fde8e8;color:#8a1c1c}.info.warn{background:#fff4dc;color:#7a5200}.info.ok{background:#e6f6ea;color:#1b5e31}
+.dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;margin-right:.45em;vertical-align:baseline}
+.dot.g{background:var(--girl)}.dot.b{background:var(--boy)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#fff;color:var(--ink);border:2px solid var(--line);padding:10px 14px;font-size:1.05rem}
+.chip.sel{border-color:var(--accent);background:#e8f1ff;color:var(--accent)}
+.chip small{display:block;font-weight:500;font-size:.72rem;color:var(--muted)}
+.lgd{font-size:.85rem;color:var(--muted);margin-top:6px}
+.stu-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px;margin-top:10px}
+.stu{display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.stu .n{flex:1;overflow-wrap:anywhere;font-weight:600}
+.stu.reg{border-color:#e8b84a;background:#fff9e8}.stu.unk{border-color:#d9534f;background:#fdeeee}
+.stu button{padding:4px 10px;font-size:.85rem;background:#e2e8f0;color:#334155}
+.stu button.on-g{background:var(--girl);color:#fff}.stu button.on-b{background:var(--boy);color:#fff}
+.saved-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
+.saved-row:last-child{border-bottom:0}
+.saved-row .t{flex:1;min-width:180px}
+.saved-row .t small{color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#14213d;color:#fff;padding:12px 18px;border-radius:12px;z-index:300;display:none;max-width:90vw;box-shadow:0 4px 18px rgba(0,0,0,.3)}
+#toast.err{background:#a82222}
+
+/* ESCENARIO */
+#stage{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;color:#fff;background:radial-gradient(circle at 50% 20%,#1d3f7a 0%,#0b1a3a 70%)}
+#stage.on{display:flex}
+.st-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;flex-wrap:wrap}
+.st-top .t{font-size:1.05rem;opacity:.9}
+.st-top button{background:rgba(255,255,255,.15);padding:8px 12px}
+.st-main{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 16px;overflow:auto}
+.st-bottom{padding:12px 16px 20px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.st-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.st-btns button.ghost{color:#fff;border-color:rgba(255,255,255,.6)}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:90vw}
+.dots i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.25)}
+.dots i.done{background:#7dd3fc}.dots i.cur{background:#fff;transform:scale(1.3)}
+.team-card{width:min(760px,100%);background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.25);border-radius:24px;padding:clamp(14px,3vw,32px);animation:pop .45s ease}
+.team-card h2{margin:0 0 clamp(10px,2vh,22px);text-align:center;font-size:clamp(1.4rem,4.5vw,2.6rem);letter-spacing:.08em;text-transform:uppercase;color:#7dd3fc}
+.slot{display:flex;align-items:center;gap:14px;padding:clamp(8px,1.8vh,16px) 18px;margin:8px 0;border-radius:16px;background:rgba(255,255,255,.1);font-size:clamp(1.3rem,4.5vw,2.6rem);font-weight:700;min-height:1.9em}
+.slot .dot{width:.55em;height:.55em;flex:none;margin:0}
+.slot .nm{flex:1;overflow-wrap:anywhere}
+.slot.spin .nm{opacity:.55;filter:blur(1.2px)}
+.slot.locked{animation:lock .35s ease;background:rgba(125,211,252,.22)}
+.slot .rep{font-size:.6em;color:#fde68a;font-weight:600}
+.intro{text-align:center}.intro .em{font-size:clamp(3rem,12vw,6rem)}
+.intro h2{font-size:clamp(1.6rem,5vw,3rem);margin:8px 0}.intro p{opacity:.85;font-size:1.1rem}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes lock{0%{transform:scale(1.06)}100%{transform:scale(1)}}
+.sum{width:min(1100px,100%)}
+.sum h2{text-align:center;margin:0 0 12px;font-size:clamp(1.4rem,4vw,2.2rem)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.sum .tc{background:rgba(255,255,255,.1);border-radius:14px;padding:12px 14px}
+.sum .tc input.tn{width:100%;margin:0 0 6px;padding:6px 8px;background:rgba(255,255,255,.12);border:1px dashed rgba(255,255,255,.4);color:#7dd3fc;font-weight:700;font-size:1.05rem}
+.sum .tc input.tn::placeholder{color:#7dd3fc;opacity:.8}
+.sum .tc div{padding:2px 0;font-size:1.05rem}
+.legend{text-align:center;margin-top:12px;opacity:.85;font-size:.95rem}
+.star{color:#fde68a}
+
+/* LOGIN */
+#login-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+#login-modal.on{display:flex}
+#login-modal .box{background:#fff;color:var(--ink);border-radius:14px;padding:18px;width:min(400px,100%)}
+
+@media print{
+  body{background:#fff}.wrap,.st-top,.st-bottom,#toast{display:none!important}
+  #stage{position:static;display:block!important;background:#fff;color:#000}
+  .st-main{display:block;overflow:visible}
+  .sum .tc{background:#fff;border:1px solid #999;color:#000;break-inside:avoid}
+  .sum .tc input.tn{background:#fff;border:0;color:#000}
+  .sum h2,.star{color:#000}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>🎲 Sorteo de equipos</h1>
+  <p class="sub">Equipos de 4 (2 nenas + 2 nenos). As listas e os equipos con nomes gárdanse <b>só neste navegador</b>. Ao torneo só se envían os nomes dos equipos, nunca os do alumnado.</p>
+  <div id="storewarn"></div>
+
+  <div class="card">
+    <h3>1 · Escolle a clase</h3>
+    <div class="chips" id="chips"></div>
+    <div id="cls-status" class="info" style="margin-top:12px"></div>
+    <div class="row">
+      <div class="auto"><label for="nteams" style="margin:0 0 4px">Nº de equipos</label><input type="number" id="nteams" min="1" max="40" placeholder="Auto" style="width:110px"></div>
+      <div class="auto"><button id="go" class="big">🎲 Sortear</button></div>
+      <div class="auto"><button id="btn-edit" class="gray">✏️ Lista da clase</button></div>
+      <div class="auto"><button id="btn-view" class="ghost">👥 Ver equipos gardados</button></div>
+    </div>
+  </div>
+
+  <div class="card" id="editor" style="display:none">
+    <h3 id="ed-title">Lista da clase</h3>
+    <p class="sub" style="margin-top:0">Sube o ficheiro (CSV ou TXT) ou pega a lista. Se tes un Excel ou LibreOffice, copia a(s) columna(s) e pégaas aquí. <b>Todo se procesa neste navegador.</b></p>
+    <div class="row">
+      <div><label for="imp-file">Ficheiro (.csv, .txt)</label><input type="file" id="imp-file" accept=".csv,.txt,.tsv,text/plain,text/csv"></div>
+      <div>
+        <label for="imp-fmt">Formato dos nomes</label>
+        <select id="imp-fmt">
+          <option value="auto">Automático</option>
+          <option value="ape-nom">Apelidos, Nome (ou columnas Apelidos | Nome)</option>
+          <option value="nom-ape">Nome Apelidos (ou columnas Nome | Apelidos)</option>
+        </select>
+      </div>
+    </div>
+    <label for="imp-text">Ou pega aquí a lista (un alumno por liña)</label>
+    <textarea id="imp-text" placeholder="García López, Ana&#10;Pérez Souto, Xoán&#10;..."></textarea>
+    <div class="row">
+      <div class="auto"><label style="margin:0;font-weight:500"><input type="checkbox" id="imp-ini" checked> Mostrar a inicial do apelido (Ana G.)</label></div>
+      <div class="auto"><button id="imp-go" class="gray">🔍 Detectar nenas e nenos</button></div>
+    </div>
+    <div id="imp-prev" class="lgd"></div>
+    <div id="imp-result" style="display:none">
+      <div id="imp-count" class="info"></div>
+      <div class="lgd"><span style="display:inline-block;width:12px;height:12px;border:1px solid #e8b84a;background:#fff9e8"></span> deducido pola terminación do nome (revisa) · <span style="display:inline-block;width:12px;height:12px;border:1px solid #d9534f;background:#fdeeee"></span> sen decidir (elixe Nena ou Neno) · branco: recoñecido</div>
+      <div class="stu-list" id="imp-list"></div>
+      <div class="row">
+        <div class="auto"><button id="imp-save" class="big">💾 Gardar lista</button></div>
+        <div class="auto"><button id="imp-del" class="danger sm">🗑️ Borrar lista</button></div>
+        <div class="auto"><button id="imp-close" class="gray sm">Pechar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>2 · Equipos gardados</h3>
+    <div id="saved"></div>
+    <div class="row">
+      <div class="auto"><button id="btn-csv" class="ghost sm">⬇️ Descargar todos os equipos (CSV)</button></div>
+      <div class="auto"><button id="btn-send-all" class="sm">🏑 Enviar todos ao torneo</button></div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+    <div class="row" style="margin-top:0">
+      <div class="auto"><button id="btn-backup" class="gray sm">💾 Copia de seguridade (listas + equipos)</button></div>
+      <div class="auto"><label class="sm" style="margin:0"><span style="display:inline-block;background:#64748b;color:#fff;padding:6px 10px;border-radius:10px;cursor:pointer;font-weight:600;font-size:.85rem">⬆️ Cargar copia</span><input type="file" id="backup-file" accept=".json,application/json" style="display:none"></label></div>
+    </div>
+    <p class="lgd">Os datos gárdanse neste navegador. Se o ordenador borra o perfil ao apagarse (habitual en equipos compartidos), usa a copia de seguridade e gárdaa nun lugar teu.</p>
+  </div>
+</div>
+
+<div id="stage">
+  <div class="st-top">
+    <div class="t" id="st-title"></div>
+    <div style="display:flex;gap:8px">
+      <button id="st-full" title="Pantalla completa">⛶ Pantalla completa</button>
+      <button id="st-close">✕ Pechar</button>
+    </div>
+  </div>
+  <div class="st-main" id="st-main"></div>
+  <div class="st-bottom">
+    <div class="dots" id="st-dots"></div>
+    <div class="st-btns" id="st-btns"></div>
+  </div>
+</div>
+
+<div id="login-modal">
+  <div class="box">
+    <h3>🔒 Acceso profesor</h3>
+    <p class="sub" style="margin-top:0">Necesítase para enviar os equipos ao torneo. Usa o mesmo email e contrasinal da app do torneo.</p>
+    <label for="lg-email">Email</label><input type="email" id="lg-email" autocomplete="username">
+    <label for="lg-pass">Contrasinal</label><input type="password" id="lg-pass" autocomplete="current-password">
+    <div id="lg-err" class="info err" style="display:none"></div>
+    <div class="row"><div class="auto"><button id="lg-ok">Entrar</button></div><div class="auto"><button id="lg-cancel" class="gray">Cancelar</button></div></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function(){
+  /* ---------- Aleatoriedade segura ---------- */
+  function randInt(n){
+    if (n <= 1) return 0;
+    const lim = Math.floor(4294967296 / n) * n;
+    const buf = new Uint32Array(1);
+    let x;
+    do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= lim);
+    return x % n;
+  }
+  function shuffle(a){
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = randInt(i + 1);
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* ---------- Lóxica do sorteo ---------- */
+  function parseList(txt, sex){
+    return txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map((name, i) => ({ id: sex + i, name: name, sex: sex }));
+  }
+  function autoTeams(g, b){ return Math.max(Math.ceil(g / 2), Math.ceil(b / 2)); }
+
+  function fillSlots(list, n){
+    const base = shuffle(list.slice());
+    const slots = base.slice(0, n);
+    const leftOut = base.slice(n);
+    while (slots.length < n) {
+      const pool = shuffle(list.slice());
+      for (const p of pool) { if (slots.length >= n) break; slots.push(p); }
+    }
+    return { slots: slots, leftOut: leftOut };
+  }
+
+  function makeTeams(girls, boys, T){
+    if (girls.length < 2 || boys.length < 2) throw new Error('Fan falta polo menos 2 nenas e 2 nenos.');
+    const G = fillSlots(girls, 2 * T), B = fillSlots(boys, 2 * T);
+    let teams = null;
+    for (let attempt = 0; attempt < 2000 && !teams; attempt++) {
+      const s = shuffle(G.slots.slice()), t = shuffle(B.slots.slice());
+      let ok = true;
+      const res = [];
+      for (let i = 0; i < T; i++) {
+        if (s[2*i].id === s[2*i+1].id || t[2*i].id === t[2*i+1].id) { ok = false; break; }
+        res.push({ members: [s[2*i], s[2*i+1], t[2*i], t[2*i+1]] });
+      }
+      if (ok) teams = res;
+    }
+    if (!teams) throw new Error('Non se puido formar un reparto válido. Proba con outro número de equipos.');
+    const count = {};
+    teams.forEach(tm => tm.members.forEach(m => { count[m.id] = (count[m.id] || 0) + 1; }));
+    const repeated = {};
+    Object.keys(count).forEach(id => { if (count[id] > 1) repeated[id] = count[id]; });
+    teams.forEach(tm => { tm.members = shuffle(tm.members.slice()); });
+    return { teams: teams, repeated: repeated, leftOut: G.leftOut.concat(B.leftOut) };
+  }
+  window.Sorteo = { makeTeams: makeTeams, parseList: parseList, autoTeams: autoTeams, randInt: randInt };
+
+  /* ---------- Carga de lista e detección de sexo polo nome ---------- */
+  const F_NAMES = ('maria lucia paula sofia martina julia valeria daniela alba carmen claudia noa noelia sara carla emma vega ines irene laura ana andrea adriana aitana alejandra alicia amelia aroa ainhoa nerea olivia lara leire lola mia miriam naia natalia nora uxia iria xiana antia sabela carme ledicia maite marta mar nuria anxela anxelica rosalia rebeca raquel silvia sonia patricia pilar rocio rosa vera victoria violeta yaiza yolanda zoe abril ada africa aina alma amaia amparo angela angelica antonia ariadna arantxa aurora barbara beatriz belen berta blanca candela cristina celia clara cloe chloe diana elena elisa elsa eva estela estrella fatima gabriela gala gema gloria helena iciar isabel itziar jana jimena joana judith kiara laia leyre lidia liliana lorena luna luz macarena manuela margarita marina mariana marisa mayra melania mercedes michelle monica montserrat nadia naiara nicole paloma rita roberta romina ruth salma samara sandra selena sheila shaila thais tamara tatiana teresa triana valentina vanesa vanessa veronica virginia wendy xenia xoana zaira aya kenza aicha maya mara mariam lia lea livia luana maia malena mireia nahia nayara nayra noemi dolores soledad paz rosario concepcion consuelo encarnacion esther ester lourdes inma marga mercedes araceli aranzazu auxiliadora begona catalina cecilia charo chus dafne dara delia denise eider elena emilia erika fabiola flor francisca gisela graciela greta guadalupe hanna hannah jessica jenifer jennifer jennyfer joselyn julieta karen karina karla katia kimberly laura leticia lilian lina lisa lorea lucila malak malika marlene martha matilde mayte melissa mia milagros mina minerva nahir naomi nieves nina nuria olalla olaia oriana oihana ona paola penelope pia priscila regina renata rosalinda rubi sabrina salome samira sarai saray scarlett serena silvana simona sira sol sonsoles soraya susana tania tessa thalia ursula uxue vega vicenta vilma yara yasmin yessica yuna zaida zulema aleixandra aldara alexia amanda amy anaelle andrea angeles ania anna anne antia aran ariana arlet arlette aurea bianca brenda brianna camila camille carlota carolina cassandra catarina charlotte chiara coral dalia dania desiree eleonora elia elina eloisa emily emma enma erea esmeralda eugenia evelyn fiona frida gaia gemma giulia giada gladys haizea hera ilaria iratxe iris isa isabela ivana jara jasmin jazmin joaquina jordana josefa josefina juana kaira kaya keila laila laura leia lena leonor lesly lucy lyra madalena magdalena maitane maria marta mei merche mia mirian monserrat nagore naroa nayeli neus nika noor ofelia olimpia oria pandora pastora pepa perla petra rafaela rebeca renata reyes rosana roxana saida sagrario salua sanaa saphira shirley sonia sunna tabata tiziana valery vanesa verona vivian wanda xiomara yaiza yanira yasmina yolanda zahra zaira zenia').split(/\s+/);
+  const M_NAMES = ('antonio jose manuel francisco juan david javier daniel carlos jesus alejandro miguel rafael pablo angel pedro luis sergio alvaro fernando adrian diego ivan hugo mario marcos martin lucas mateo leo thiago bruno gonzalo nicolas ruben raul victor oscar samuel izan dario enzo liam noah gael marc pol jan aaron adam aitor andres ander anxo brais dani denis dylan eduardo eloy enrique eric ismael jaime jorge jon kevin lois loi lorenzo marco mauro max mohamed nil noel oliver oier omar pau paulo rodrigo roi saul santiago sebastian simon tomas toni unai uxio xabier xoan xurxo yago yeray zacarias breixo iago xaime miro nel damian anton breogan cibran cristobo eladio fran ian ibai iker jairo joel jofre kilian leonardo lian matias matteo mikel nahuel nuno pelayo ramon roque said tiago vasco wilson yoel xoel xose xesus xurxo xulio xian xacobe antom abel abraham adolfo adria agustin aimar alan albert alberto alejo alexis alfonso alfredo alonso amadeo amir amin armando arnau arturo asier axel aurelio baltasar bautista benjamin bernardo biel borja candido carles cesar charly christian clemente cristian cristobal cruz dante dario didac dionisio domingo dorian edgar edu edwin efrain elias emilio emiliano emmanuel erik ernesto esteban eugenio ezequiel fabian fabio facundo faustino felipe feliciano felix fermin fidel flavio florencio francesc gabriel gaspar gerard german gerardo gilberto gines gustavo guillermo gabi hector heriberto hernan hilario homero horacio humberto ibrahim ignacio ildefonso isaac isidro ismael itan ivo jacobo jacinto jacob jaume jeremias jeronimo joan joaquin jordi josep josue juanjo julian julio justo kai karim khaled lazaro leandro lenin leopoldo lluis lope loren luca lupe maikel malick mamadou marc mariano mateu maurici maximo mayoral melchor mirko modesto moises mustafa nacho nestor nicolo noe octavio olivier orlando oriol otto pascual patricio pavel pere pierre pietro pol porfirio quim quique rai ramiro raimundo reinaldo remo ricardo rigoberto roberto rocco rolando roman romeo ronald rufino sabino salvador sancho saturnino segundo severo sidney silvio simeon sixto soufiane tadeo teodoro teo tiziano tobias tristan ulises urbano valentin valeriano venancio vicente victoriano virgilio vladimir walter xavier yahya yassin youssef yusuf zaid zeus ahmed aleix alexandre andreu anibal ayoub bilal bryan cayetano cian eder ekain elian eneko enol erlantz fausto genis gerson hamza hasan iban idris imanol inigo ioritz iyan joshua jonatan junior kaled kenan leon lisandro luken lukas manu manolo marwan matthew max miguelangel nicolas nikolas oscar otman paco pablo pepe quino rayan tadeo thiago tomas vito xabi yassine yago').split(/\s+/);
+  const REAL_AMBIG = new Set(['alex', 'ariel', 'sasha', 'charlie', 'nikita', 'yael', 'kai', 'eden', 'cris', 'gabi', 'loreto', 'ale', 'pau', 'lucca']);
+  const FS = new Set(F_NAMES), MS = new Set(M_NAMES);
+  function normTok(t){ return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-zñ]/g, ''); }
+  function classifyToken(tok){
+    let n = normTok(tok);
+    if (!n) return null;
+    if (n === 'm' || n === 'ma' || n === 'mª') n = 'maria';
+    if (REAL_AMBIG.has(n)) return { sex: null, src: 'unk' };
+    const inF = FS.has(n), inM = MS.has(n);
+    if (inF && !inM) return { sex: 'g', src: 'dic' };
+    if (inM && !inF) return { sex: 'b', src: 'dic' };
+    if (inF && inM) return { sex: null, src: 'unk' };
+    if (/a$/.test(n)) return { sex: 'g', src: 'regla' };
+    if (/o$/.test(n)) return { sex: 'b', src: 'regla' };
+    return { sex: null, src: 'unk' };
+  }
+  function classifyFirst(first){
+    const toks = first.split(/\s+/).filter(Boolean);
+    let fallback = null;
+    for (const t of toks) {
+      const c = classifyToken(t);
+      if (!c) continue;
+      if (c.src === 'dic') return c;
+      if (!fallback || (fallback.src === 'unk' && c.src !== 'unk')) fallback = c;
+    }
+    return fallback || { sex: null, src: 'unk' };
+  }
+  function parseStudents(text, fmt){
+    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const out = [];
+    let order = fmt === 'nom-ape' ? 'nom-ape' : 'ape-nom';
+    lines.forEach((line, idx) => {
+      let cells;
+      if (/[\t;]/.test(line)) cells = line.split(/[\t;]/);
+      else if (line.indexOf(',') >= 0) cells = [line.slice(0, line.indexOf(',')), line.slice(line.indexOf(',') + 1)];
+      else cells = [line];
+      cells = cells.map(c => c.replace(/^"|"$/g, '').trim()).filter(c => c && !/^\d+$/.test(c));
+      if (!cells.length) return;
+      if (idx === 0 && cells.some(c => /^(nom(e|bre)s?|apel+idos?|alumn[oa]s?|estudiantes?)$/i.test(c))) {
+        if (fmt === 'auto') {
+          const iN = cells.findIndex(c => /^nom(e|bre)/i.test(c)), iA = cells.findIndex(c => /^apel/i.test(c));
+          if (iN >= 0 && iA >= 0) order = iN < iA ? 'nom-ape' : 'ape-nom';
+        }
+        return;
+      }
+      let first, last = '';
+      if (cells.length >= 2) {
+        if (order === 'nom-ape') { first = cells[0]; last = cells[1]; }
+        else { last = cells[0]; first = cells[1]; }
+      } else {
+        const w = cells[0].split(/\s+/);
+        first = w[0]; last = w.slice(1).join(' ');
+      }
+      out.push({ raw: line, first: first, last: last });
+    });
+    return out;
+  }
+  window.Sorteo.classifyFirst = classifyFirst;
+  window.Sorteo.parseStudents = parseStudents;
+
+
+  const $ = id => document.getElementById(id);
+  const CLASSES = ['3A', '3B', '4A', '4B', '5A', '5B', '6A', '6B'];
+  const label = c => c.charAt(0) + 'º' + c.charAt(1);
+  const KEY = 'sorteo_equipos_v1';
+  let DB = { lists: {}, teams: {} };
+  let storageOK = true;
+  let cur = null;           // clase seleccionada
+  let STU = [];             // alumnos en edición
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function toast(msg, err){
+    const t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.style.display = 'block';
+    clearTimeout(toast._t); toast._t = setTimeout(() => { t.style.display = 'none'; }, err ? 7000 : 3500);
+  }
+
+  /* ---------- Almacenamento local ---------- */
+  function loadDB(){
+    try {
+      localStorage.setItem(KEY + '_t', '1'); localStorage.removeItem(KEY + '_t');
+      const r = localStorage.getItem(KEY);
+      if (r) { const d = JSON.parse(r); if (d && d.lists && d.teams) DB = d; }
+    } catch (e) { storageOK = false; }
+    if (!storageOK) $('storewarn').innerHTML = '<div class="info warn">⚠️ Este navegador non permite gardar datos. Podes sortear, pero usa «Copia de seguridade» e «Descargar CSV» para non perder nada.</div>';
+  }
+  function saveDB(){
+    try { localStorage.setItem(KEY, JSON.stringify(DB)); return true; }
+    catch (e) { storageOK = false; toast('Non se puido gardar neste navegador. Descarga a copia de seguridade.', true); return false; }
+  }
+
+  /* ---------- Selector de clase ---------- */
+  function renderChips(){
+    $('chips').innerHTML = '';
+    CLASSES.forEach(c => {
+      const L = DB.lists[c], T = DB.teams[c];
+      const b = document.createElement('button');
+      b.className = 'chip' + (c === cur ? ' sel' : '');
+      b.innerHTML = label(c) + '<small>' + (L ? '✓ ' + L.students.length + ' alumnos' : 'sen lista') + (T ? ' · 👥 ' + T.teams.length : '') + '</small>';
+      b.addEventListener('click', () => { cur = c; $('nteams').value = ''; renderChips(); renderStatus(); if ($('editor').style.display !== 'none') openEditor(); });
+      $('chips').appendChild(b);
+    });
+  }
+  function classCounts(c){
+    const L = DB.lists[c]; if (!L) return null;
+    return { g: L.students.filter(s => s.sex === 'g').length, b: L.students.filter(s => s.sex === 'b').length };
+  }
+  function currentT(){
+    const n = parseInt($('nteams').value, 10);
+    const k = classCounts(cur); if (!k) return 0;
+    return n ? Math.max(1, Math.min(40, n)) : autoTeams(k.g, k.b);
+  }
+  function renderStatus(){
+    const el = $('cls-status');
+    el.className = 'info';
+    $('go').disabled = !cur; $('btn-edit').disabled = !cur; $('btn-view').disabled = !(cur && DB.teams[cur]);
+    if (!cur) { el.textContent = 'Elixe unha clase.'; return; }
+    const k = classCounts(cur);
+    if (!k) { el.className = 'info warn'; el.textContent = label(cur) + ': aínda non hai lista. Preme «Lista da clase» para cargala.'; return; }
+    if (k.g < 2 || k.b < 2) { el.className = 'info err'; el.textContent = label(cur) + ': ' + k.g + ' nenas · ' + k.b + ' nenos. Fan falta polo menos 2 de cada.'; return; }
+    const T = currentT(), repG = Math.max(0, 2 * T - k.g), repB = Math.max(0, 2 * T - k.b), outG = Math.max(0, k.g - 2 * T), outB = Math.max(0, k.b - 2 * T);
+    let msg = label(cur) + ': ' + k.g + ' nenas · ' + k.b + ' nenos → ' + T + ' equipos.';
+    if (repG || repB) msg += ' Repetirán: ' + repG + ' nena(s) e ' + repB + ' neno(s).';
+    if (outG || outB) { el.className = 'info warn'; msg += ' ⚠️ Quedarían sen equipo ' + outG + ' nena(s) e ' + outB + ' neno(s): aumenta o nº de equipos.'; }
+    if (DB.teams[cur]) msg += ' (Xa hai equipos gardados desta clase.)';
+    el.textContent = msg;
+  }
+  $('nteams').addEventListener('input', renderStatus);
+
+  /* ---------- Editor de lista ---------- */
+  function openEditor(){
+    if (!cur) return;
+    $('editor').style.display = 'block';
+    $('ed-title').textContent = 'Lista de ' + label(cur);
+    $('imp-text').value = ''; $('imp-prev').textContent = '';
+    const L = DB.lists[cur];
+    if (L) {
+      STU = L.students.map(s => ({ first: s.name, last: '', sex: s.sex, src: 'man' }));
+      $('imp-prev').textContent = 'Lista gardada. Podes corrixir nenas/nenos aquí, ou pegar unha lista nova para substituíla.';
+      renderStudents();
+    } else { STU = []; $('imp-result').style.display = 'none'; }
+    $('editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function displayNames(list, withInitial){
+    const base = list.map(s => s.first + (withInitial && s.last ? ' ' + s.last.trim().charAt(0).toUpperCase() + '.' : ''));
+    const cnt = {};
+    base.forEach(n => { cnt[n.toLowerCase()] = (cnt[n.toLowerCase()] || 0) + 1; });
+    return list.map((s, i) => {
+      let n = base[i];
+      if (cnt[n.toLowerCase()] > 1 && s.last) {
+        const w = s.last.trim().split(/\s+/);
+        n = s.first + ' ' + (w[0].length > 1 ? w[0].slice(0, 3) + '.' : w[0]);
+      }
+      return n;
+    });
+  }
+  function renderStudents(){
+    const names = displayNames(STU, $('imp-ini').checked);
+    const box = $('imp-list'); box.innerHTML = '';
+    STU.forEach((s, i) => {
+      const d = document.createElement('div');
+      d.className = 'stu' + (s.sex === null ? ' unk' : s.src === 'regla' ? ' reg' : '');
+      d.innerHTML = '<span class="n"></span><button type="button" data-s="g">Nena</button><button type="button" data-s="b">Neno</button>';
+      d.querySelector('.n').textContent = names[i];
+      d.querySelectorAll('button').forEach(btn => {
+        if (s.sex === btn.dataset.s) btn.classList.add(btn.dataset.s === 'g' ? 'on-g' : 'on-b');
+        btn.addEventListener('click', () => { s.sex = btn.dataset.s; s.src = 'man'; renderStudents(); });
+      });
+      box.appendChild(d);
+    });
+    const g = STU.filter(s => s.sex === 'g').length, b = STU.filter(s => s.sex === 'b').length, u = STU.filter(s => s.sex === null).length;
+    const reg = STU.filter(s => s.src === 'regla' && s.sex !== null).length;
+    $('imp-count').className = 'info' + (u ? ' err' : reg ? ' warn' : '');
+    $('imp-count').textContent = STU.length + ' alumnos/as: ' + g + ' nenas · ' + b + ' nenos' + (u ? ' · ' + u + ' sen decidir (en vermello)' : '') + (reg ? ' · ' + reg + ' deducidos pola terminación (en amarelo, revísaos)' : '');
+    $('imp-save').disabled = u > 0 || !STU.length;
+    $('imp-result').style.display = 'block';
+  }
+  function runDetect(){
+    const arr = parseStudents($('imp-text').value, $('imp-fmt').value);
+    if (!arr.length) { $('imp-prev').textContent = 'Non hai ningún nome. Pega a lista ou sube un ficheiro.'; return; }
+    arr.forEach(s => { const c = classifyFirst(s.first); s.sex = c.sex; s.src = c.src; });
+    STU = arr;
+    const f = arr[0];
+    $('imp-prev').textContent = 'Primeira liña interpretada así → nome: «' + f.first + '»' + (f.last ? ' · apelidos: «' + f.last + '»' : '') + '. Se está ao revés, cambia o formato e volve detectar.';
+    renderStudents();
+  }
+  $('imp-go').addEventListener('click', runDetect);
+  $('imp-ini').addEventListener('change', () => { if (STU.length && STU[0].last) renderStudents(); });
+  $('imp-fmt').addEventListener('change', () => { if ($('imp-text').value.trim()) runDetect(); });
+  $('imp-file').addEventListener('change', function(){
+    const f = this.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = function(){
+      let txt;
+      try { txt = new TextDecoder('utf-8', { fatal: true }).decode(rd.result); }
+      catch (e) { txt = new TextDecoder('windows-1252').decode(rd.result); }
+      $('imp-text').value = txt; runDetect();
+    };
+    rd.readAsArrayBuffer(f);
+  });
+  $('imp-save').addEventListener('click', function(){
+    if (!cur) return;
+    const names = displayNames(STU, $('imp-ini').checked);
+    DB.lists[cur] = { students: STU.map((s, i) => ({ name: names[i], sex: s.sex })), upd: Date.now() };
+    if (saveDB()) toast('✅ Lista de ' + label(cur) + ' gardada (' + STU.length + ' alumnos).');
+    $('editor').style.display = 'none';
+    renderChips(); renderStatus(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  $('imp-del').addEventListener('click', function(){
+    if (!cur || !DB.lists[cur]) { $('editor').style.display = 'none'; return; }
+    if (!confirm('Borrar a lista de ' + label(cur) + '?')) return;
+    delete DB.lists[cur]; saveDB(); STU = []; $('editor').style.display = 'none'; renderChips(); renderStatus();
+  });
+  $('imp-close').addEventListener('click', () => { $('editor').style.display = 'none'; });
+  $('btn-edit').addEventListener('click', openEditor);
+
+  /* ---------- Escenario ---------- */
+  const S = { res: null, idx: -1, T: 0, timers: [], spinning: false, all: [], cid: null, names: [], saved: true };
+  function clearTimers(){ S.timers.forEach(t => { clearInterval(t); clearTimeout(t); }); S.timers = []; }
+  function dotFor(m){ return '<span class="dot ' + (m.sex === 'g' ? 'g' : 'b') + '"></span>'; }
+  function tname(i){ return (S.names[i] || '').trim() || ('Equipo ' + (i + 1)); }
+
+  function startDraw(cid, T){
+    const L = DB.lists[cid];
+    const girls = L.students.filter(s => s.sex === 'g').map((s, i) => ({ id: 'g' + i, name: s.name, sex: 'g' }));
+    const boys = L.students.filter(s => s.sex === 'b').map((s, i) => ({ id: 'b' + i, name: s.name, sex: 'b' }));
+    if (girls.length < 2 || boys.length < 2) { toast('Fan falta polo menos 2 nenas e 2 nenos.', true); return false; }
+    try { S.res = makeTeams(girls, boys, T); } catch (e) { toast(e.message, true); return false; }
+    S.T = T; S.idx = -1; S.cid = cid; S.names = []; S.saved = false;
+    S.all = girls.concat(boys).map(p => p.name);
+    return true;
+  }
+  function openStage(){ $('stage').classList.add('on'); document.body.style.overflow = 'hidden'; render(); }
+  function closeStage(force){
+    if (!force && S.idx >= S.T && !S.saved && !confirm('Non gardaches estes equipos. Pechar igualmente?')) return;
+    clearTimers(); S.spinning = false;
+    $('stage').classList.remove('on'); document.body.style.overflow = '';
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+    renderChips(); renderStatus(); renderSaved();
+  }
+  function addBtn(text, cls, fn){
+    const b = document.createElement('button');
+    b.textContent = text; if (cls) b.className = cls; b.addEventListener('click', fn);
+    $('st-btns').appendChild(b); return b;
+  }
+  function setTitle(){
+    const i = S.idx, T = S.T;
+    $('st-title').textContent = label(S.cid) + ' · ' + (i >= 0 && i < T ? 'Equipo ' + (i + 1) + ' de ' + T : 'Sorteo de equipos');
+    $('st-dots').innerHTML = Array.from({ length: T }, (_, k) => '<i class="' + (k < i ? 'done' : k === i ? 'cur' : '') + '"></i>').join('');
+  }
+  function render(){
+    clearTimers(); S.spinning = false; setTitle();
+    const T = S.T, i = S.idx;
+    $('st-btns').innerHTML = '';
+    if (i < 0) {
+      $('st-main').innerHTML = '<div class="intro"><div class="em">🎲</div><h2>' + label(S.cid) + ' · sorteo listo</h2><p>' + T + ' equipos de 4 · 2 nenas + 2 nenos</p></div>';
+      addBtn('Comezar ▶', 'big', next);
+    } else if (i < T) showTeam(i, true);
+    else showSummary();
+  }
+  function showTeam(i, animate){
+    const tm = S.res.teams[i];
+    $('st-main').innerHTML = '<div class="team-card"><h2>' + esc(tname(i)) + '</h2>' +
+      tm.members.map((m, k) => '<div class="slot' + (animate ? ' spin' : ' locked') + '" id="slot' + k + '">' + dotFor(m) +
+        '<span class="nm">' + (animate ? '…' : esc(m.name)) + '</span>' +
+        (!animate && S.res.repeated[m.id] ? '<span class="rep">★ tamén noutro equipo</span>' : '') + '</div>').join('') + '</div>';
+    $('st-btns').innerHTML = '';
+    if (i > 0) addBtn('◀ Anterior', 'gray', prev);
+    const nextLabel = i === S.T - 1 ? 'Ver todos os equipos ▶' : 'Seguinte equipo ▶';
+    const nb = addBtn(animate ? 'Saltar ⏭' : nextLabel, 'big', function(){ if (S.spinning) finishSpin(i); else next(); });
+    if (animate) startSpin(i, nb, nextLabel);
+  }
+  function lockSlot(i, k){
+    const m = S.res.teams[i].members[k], el = $('slot' + k);
+    if (!el) return;
+    el.classList.remove('spin'); el.classList.add('locked');
+    el.querySelector('.nm').textContent = m.name;
+    if (S.res.repeated[m.id] && !el.querySelector('.rep')) {
+      const r = document.createElement('span'); r.className = 'rep'; r.textContent = '★ tamén noutro equipo'; el.appendChild(r);
+    }
+  }
+  function startSpin(i, nb, nextLabel){
+    S.spinning = true;
+    const iv = setInterval(function(){
+      for (let k = 0; k < 4; k++) {
+        const el = $('slot' + k);
+        if (el && el.classList.contains('spin')) el.querySelector('.nm').textContent = S.all[randInt(S.all.length)];
+      }
+    }, 70);
+    S.timers.push(iv);
+    for (let k = 0; k < 4; k++) {
+      S.timers.push(setTimeout(function(){
+        lockSlot(i, k);
+        if (k === 3) { clearInterval(iv); S.spinning = false; nb.textContent = nextLabel; }
+      }, 1100 + k * 750));
+    }
+  }
+  function finishSpin(i){
+    clearTimers(); S.spinning = false;
+    for (let k = 0; k < 4; k++) lockSlot(i, k);
+    const last = $('st-btns').lastElementChild;
+    if (last) last.textContent = i === S.T - 1 ? 'Ver todos os equipos ▶' : 'Seguinte equipo ▶';
+  }
+  function showSummary(){
+    const teams = S.res.teams, rep = S.res.repeated;
+    $('st-main').innerHTML = '<div class="sum"><h2>🏑 ' + label(S.cid) + ' · Todos os equipos</h2>' +
+      '<div class="legend" style="margin:-4px 0 10px">Podes escribir o nome que escolla cada equipo.</div><div class="grid">' +
+      teams.map((tm, i) => '<div class="tc"><input class="tn" data-i="' + i + '" type="text" maxlength="40" placeholder="Equipo ' + (i + 1) + '" value="' + esc(S.names[i] || '') + '">' +
+        tm.members.map(m => '<div>' + dotFor(m) + esc(m.name) + (rep[m.id] ? ' <span class="star">★</span>' : '') + '</div>').join('') + '</div>').join('') +
+      '</div>' +
+      (Object.keys(rep).length ? '<div class="legend"><span class="star">★</span> xoga en dous equipos</div>' : '') +
+      (S.res.leftOut.length ? '<div class="legend">⚠️ Sen equipo: ' + S.res.leftOut.map(p => esc(p.name)).join(', ') + '</div>' : '') + '</div>';
+    document.querySelectorAll('.tn').forEach(inp => inp.addEventListener('input', function(){ S.names[+this.dataset.i] = this.value; S.saved = false; }));
+    $('st-btns').innerHTML = '';
+    addBtn('◀ Anterior', 'gray', prev);
+    addBtn('💾 Gardar equipos', 'big', saveTeams);
+    addBtn('🏑 Enviar ao torneo', '', function(){ if (!S.saved) saveTeams(); sendToTorneo([S.cid]); });
+    addBtn('📋 Copiar', 'ghost', copyTeams);
+    addBtn('🖨️ Imprimir', 'ghost', function(){ window.print(); });
+    addBtn('🔁 Repetir sorteo', 'gray', function(){
+      if (!S.saved && !confirm('Isto descarta estes equipos e fai un sorteo novo. Continuar?')) return;
+      if (startDraw(S.cid, S.T)) render();
+    });
+  }
+  function toSaved(){
+    return { T: S.T, upd: Date.now(), teams: S.res.teams.map((t, i) => ({
+      name: (S.names[i] || '').trim(),
+      members: t.members.map(m => ({ n: m.name, s: m.sex, r: !!S.res.repeated[m.id] })) })) };
+  }
+  function saveTeams(){
+    if (DB.teams[S.cid] && !S.saved && !confirm('Xa hai equipos gardados de ' + label(S.cid) + '. Substituílos por estes?')) return;
+    DB.teams[S.cid] = toSaved();
+    if (saveDB()) { S.saved = true; toast('✅ Equipos de ' + label(S.cid) + ' gardados.'); }
+  }
+  function textOf(entry, cid){
+    return label(cid) + '\n' + entry.teams.map((t, i) => (t.name || 'Equipo ' + (i + 1)) + ': ' + t.members.map(m => m.n + (m.r ? ' ★' : '')).join(', ')).join('\n');
+  }
+  function copyTeams(ev){
+    const txt = textOf(toSaved(), S.cid), btn = ev.currentTarget;
+    const done = () => { const old = btn.textContent; btn.textContent = '✅ Copiado'; setTimeout(() => btn.textContent = old, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => window.prompt('Copia o texto:', txt));
+    else window.prompt('Copia o texto:', txt);
+  }
+  function next(){ if (S.idx < S.T) { S.idx++; render(); } }
+  function prev(){
+    if (S.idx > 0) { S.idx--; clearTimers(); S.spinning = false; setTitle(); showTeam(S.idx, false); }
+  }
+
+  /* ---------- Equipos gardados ---------- */
+  function renderSaved(){
+    const box = $('saved'); box.innerHTML = '';
+    const ids = CLASSES.filter(c => DB.teams[c]);
+    if (!ids.length) { box.innerHTML = '<p class="lgd">Aínda non hai equipos gardados.</p>'; }
+    ids.forEach(c => {
+      const e = DB.teams[c];
+      const row = document.createElement('div'); row.className = 'saved-row';
+      row.innerHTML = '<div class="t"><b>' + label(c) + '</b> · ' + e.teams.length + ' equipos <small>(' + new Date(e.upd).toLocaleString('gl-ES') + ')</small></div>';
+      const mk = (txt, cls, fn) => { const b = document.createElement('button'); b.className = cls + ' sm'; b.textContent = txt; b.addEventListener('click', fn); row.appendChild(b); };
+      mk('👁️ Ver', 'gray', () => openSaved(c));
+      mk('📋 Copiar', 'ghost', () => { const t = textOf(e, c); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => toast('Copiado.'), () => window.prompt('Copia:', t)); else window.prompt('Copia:', t); });
+      mk('🏑 Enviar', '', () => sendToTorneo([c]));
+      mk('🗑️', 'danger', () => { if (confirm('Borrar os equipos gardados de ' + label(c) + '?')) { delete DB.teams[c]; saveDB(); renderSaved(); renderChips(); renderStatus(); } });
+      box.appendChild(row);
+    });
+    $('btn-csv').disabled = !ids.length; $('btn-send-all').disabled = !ids.length;
+  }
+  function openSaved(c){
+    const e = DB.teams[c];
+    const rep = {};
+    const teams = e.teams.map((t, ti) => ({ members: t.members.map((m, mi) => { const id = m.s + ':' + m.n; if (m.r) rep[id] = 2; return { id: id, name: m.n, sex: m.s }; }) }));
+    S.res = { teams: teams, repeated: rep, leftOut: [] };
+    S.T = e.teams.length; S.cid = c; S.names = e.teams.map(t => t.name || ''); S.idx = S.T; S.saved = true; S.all = [];
+    openStage();
+  }
+
+  /* ---------- Descargas ---------- */
+  function download(name, text, type){
+    const blob = new Blob([text], { type: type || 'text/plain' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function buildCSV(){
+    const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+    const rows = [['Clase', 'Equipo', 'Nome do equipo', 'Xogador 1', 'Xogador 2', 'Xogador 3', 'Xogador 4'].map(q).join(';')];
+    CLASSES.forEach(c => { const e = DB.teams[c]; if (!e) return;
+      e.teams.forEach((t, i) => rows.push([label(c), i + 1, t.name || '', ...t.members.map(m => m.n + (m.r ? ' ★' : ''))].map(q).join(';'))); });
+    return '﻿' + rows.join('\r\n');
+  }
+  window.Sorteo.buildCSV = buildCSV;
+  $('btn-csv').addEventListener('click', () => download('equipos_torneo.csv', buildCSV(), 'text/csv;charset=utf-8'));
+  $('btn-backup').addEventListener('click', () => download('sorteo_copia_seguridade.json', JSON.stringify(DB), 'application/json'));
+  $('backup-file').addEventListener('change', function(){
+    const f = this.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = function(){
+      try {
+        const d = JSON.parse(rd.result);
+        if (!d || typeof d.lists !== 'object' || typeof d.teams !== 'object') throw new Error('x');
+        if (!confirm('Substituír as listas e equipos actuais polos da copia?')) return;
+        DB = { lists: d.lists, teams: d.teams }; saveDB(); renderChips(); renderStatus(); renderSaved(); toast('✅ Copia cargada.');
+      } catch (e) { toast('O ficheiro non parece unha copia de seguridade válida.', true); }
+    };
+    rd.readAsText(f);
+  });
+
+  /* ---------- Envío ao torneo (só nomes de equipos) ---------- */
+  const FB_CFG = {
+    apiKey: "AIzaSyAnLlD1ctd6C0QBTZtdFgpzJ5KRL8ztd5M",
+    authDomain: "torneo-hockey.firebaseapp.com",
+    databaseURL: "https://torneo-hockey-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "torneo-hockey",
+    storageBucket: "torneo-hockey.firebasestorage.app",
+    messagingSenderId: "418864031332",
+    appId: "1:418864031332:web:1a6aed6b1920524165e171"
+  };
+  function loadScript(src){
+    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res;
+      s.onerror = () => rej(new Error('Non se puido cargar Firebase (¿filtro do centro ou sen internet?).')); document.head.appendChild(s); });
+  }
+  async function ensureFirebase(){
+    if (!window.firebase) {
+      const base = 'https://www.gstatic.com/firebasejs/8.10.1/';
+      await loadScript(base + 'firebase-app.js'); await loadScript(base + 'firebase-auth.js'); await loadScript(base + 'firebase-database.js');
+    }
+    if (!firebase.apps.length) firebase.initializeApp(FB_CFG);
+  }
+  function currentUser(){ return new Promise(res => { const un = firebase.auth().onAuthStateChanged(u => { un(); res(u); }); }); }
+  function askLogin(){
+    return new Promise((res, rej) => {
+      const m = $('login-modal'); m.classList.add('on'); $('lg-err').style.display = 'none'; $('lg-email').focus();
+      const done = (ok, err) => { m.classList.remove('on'); $('lg-ok').onclick = null; $('lg-cancel').onclick = null; $('lg-pass').onkeydown = null; ok ? res() : rej(err); };
+      const go = async () => {
+        try { await firebase.auth().signInWithEmailAndPassword($('lg-email').value.trim(), $('lg-pass').value); $('lg-pass').value = ''; done(true); }
+        catch (e) { $('lg-err').textContent = 'Non se puido iniciar sesión: ' + (e.message || e); $('lg-err').style.display = 'block'; }
+      };
+      $('lg-ok').onclick = go; $('lg-pass').onkeydown = e => { if (e.key === 'Enter') go(); };
+      $('lg-cancel').onclick = () => done(false, new Error('Envío cancelado.'));
+    });
+  }
+  function teamNamesFor(entry){
+    const seen = {};
+    return entry.teams.map((t, i) => {
+      let n = (t.name || '').trim() || ('Equipo ' + (i + 1));
+      const k = n.toLowerCase(); seen[k] = (seen[k] || 0) + 1;
+      return seen[k] > 1 ? n + ' (' + seen[k] + ')' : n;
+    });
+  }
+  async function sendToTorneo(cids){
+    cids = cids.filter(c => DB.teams[c]);
+    if (!cids.length) return;
+    if (!confirm('Enviarase ao torneo SÓ o nome dos equipos (Equipo 1, 2… ou o que escribisen) de: ' + cids.map(label).join(', ') + '.\nOs nomes do alumnado non se envían.\n\nContinuar?')) return;
+    try {
+      toast('Conectando co torneo…');
+      await ensureFirebase();
+      let user = await currentUser();
+      if (!user) { await askLogin(); }
+      const db = firebase.database();
+      let ok = [], skipped = [];
+      for (const c of cids) {
+        const ref = db.ref('torneo/groups/' + c);
+        const snap = await ref.once('value'); const curv = snap.val();
+        if (curv && curv.rounds && !confirm(label(c) + ' xa ten xornadas/resultados no torneo. Se continúas, bórranse os partidos deste grupo e haberá que xerar as xornadas de novo. ¿Continuar con ' + label(c) + '?')) { skipped.push(label(c)); continue; }
+        const teams = teamNamesFor(DB.teams[c]).map(n => ({ name: n, shield: '', photo: '' }));
+        await ref.update({ teams: teams, rounds: null });
+        ok.push(label(c));
+      }
+      toast((ok.length ? '✅ Enviado ao torneo: ' + ok.join(', ') + '. Agora xera as xornadas na app.' : 'Nada enviado.') + (skipped.length ? ' Omitido: ' + skipped.join(', ') + '.' : ''), !ok.length);
+    } catch (e) {
+      toast('Non se puido enviar: ' + (e.message || e) + ' Podes descargar o CSV e escribilos na app.', true);
+    }
+  }
+  $('btn-send-all').addEventListener('click', () => sendToTorneo(CLASSES.filter(c => DB.teams[c])));
+
+  /* ---------- Botóns principais ---------- */
+  $('go').addEventListener('click', function(){
+    if (!cur) return;
+    if (!DB.lists[cur]) { openEditor(); return; }
+    const k = classCounts(cur);
+    if (k.g < 2 || k.b < 2) { toast('Fan falta polo menos 2 nenas e 2 nenos.', true); return; }
+    if (DB.teams[cur] && !confirm('Xa hai equipos gardados de ' + label(cur) + '. Podes sortear de novo, pero só se substitúen cando gardes.\n¿Sortear?')) return;
+    if (startDraw(cur, currentT())) openStage();
+  });
+  $('btn-view').addEventListener('click', () => { if (cur && DB.teams[cur]) openSaved(cur); });
+  $('st-close').addEventListener('click', () => closeStage(false));
+  $('st-full').addEventListener('click', function(){
+    if (!document.fullscreenElement) { const el = document.documentElement; if (el.requestFullscreen) el.requestFullscreen(); }
+    else if (document.exitFullscreen) document.exitFullscreen();
+  });
+  document.addEventListener('keydown', function(e){
+    if (!$('stage').classList.contains('on')) return;
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') { e.preventDefault(); if (S.idx >= S.T) return; const b = $('st-btns').querySelector('button.big'); if (b) b.click(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+    else if (e.key === 'Escape') { closeStage(false); }
+  });
+
+  window.Sorteo.state = () => DB;
+  loadDB(); renderChips(); renderStatus(); renderSaved();
+})();
+</script>
+</body>
+</html>

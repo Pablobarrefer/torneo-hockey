@@ -32,12 +32,27 @@ Nos equipos de cada grupo, o profesor ten dous botóns: **🛡️ Escudo (cámar
 
 * **Foto de equipo (protección de imaxe):** o detector de caras funciona **no propio navegador** (nada se envía a terceiros) e pon un emoji sobre cada cara. Hai vista previa: tocando unha cara sen emoji engádese, e tocando un emoji quítase. Opción de estilo cómic. A foto orixinal non se garda en ningún sitio; só se sube a versión con emojis. Revisa sempre a vista previa antes de gardar.
 * **Escudo debuxado:** recorte cadrado con zoom e mellora automática de contraste e fondo branco.
+* As fotos de equipo non aparecen nas listas de equipos: só na **galería**, que está pechada por defecto (botón «📷 Ver galería»), para que a páxina sexa áxil.
 * As imaxes redúcense (foto ≈ 60 KB, escudo ≈ 8 KB) e gárdanse en Firebase na ruta `torneo_img`, aparte dos datos do torneo. O alumnado só descarga as que ve.
 * Tamén se pode seguir usando unha URL de imaxe no lugar da cámara.
 
 ## 🗓️ Curso escolar e edición
 
 Ao escribir o curso (por exemplo `2026-2027`) o título calcula automaticamente o número de edición en cifras romanas, a razón dunha edición por curso: **2018-2019 foi a XV**, polo que **2026-2027 é a XXIII**.
+
+## 🎲 Sorteo de equipos
+
+Ferramenta independente para facer o sorteo diante do alumnado: `sorteo_equipos.html`
+(https://pablobarrefer.github.io/torneo-hockey/sorteo_equipos.html).
+
+* **Equipos de 4** (2 nenas + 2 nenos) da mesma clase, sorteados con aleatoriedade segura do navegador. Se as contas non cadran, algunhas persoas xogan en dous equipos (marcadas con ★).
+* **Listas por clase:** cárgase unha vez o CSV/TXT (ou pegando a lista) e a páxina detecta nenas e nenos polo nome; hai que revisar os nomes dubidosos. O día do sorteo só se elixe a clase e se preme «Sortear».
+* **Revelado equipo por equipo**, en pantalla completa para proxectar. Ao final pódese poñer o nome que escolla cada equipo.
+* **Gardar equipos**, copiar, imprimir e descargar un CSV con todos os equipos.
+* **Enviar ao torneo:** escribe os equipos no grupo correspondente da app (4ºA → grupo 4A). Despois hai que xerar as xornadas en cada grupo.
+* **Privacidade:** as listas e os equipos con nomes gárdanse **só no navegador** do ordenador usado. Ao torneo só se envían os nomes dos equipos (Equipo 1, 2… ou o que escollan), nunca os do alumnado.
+* **Copia de seguridade:** o navegador pode borrar os datos (habitual en ordenadores compartidos). Descarga a copia de seguridade da propia páxina e gárdaa nun lugar teu.
+* Para enviar ao torneo hai que abrir a páxina desde GitHub Pages (non como ficheiro local) e ter a sesión de profesor iniciada.
 
 ## 🖥️ Outras funcións
 
@@ -73,7 +88,3 @@ O botón "🗑️ Reiniciar" borra **todos** os datos do torneo e as imaxes en F
 
 Deseñado para funcionar en PC, Tablet e Móbil.
 Proxecto de código aberto para a xestión deportiva escolar en galego.
-
-Proxecto de código aberto para a xestión deportiva escolar en galego.
-
-
