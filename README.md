@@ -61,7 +61,7 @@ Ao escribir o curso (por exemplo `2026-2027`) o título calcula automaticamente 
 Ferramenta independente para facer o sorteo diante do alumnado: `sorteo_equipos.html`
 (https://pablobarrefer.github.io/torneo-hockey/sorteo_equipos.html).
 
-* **Equipos de 4** (2 nenas + 2 nenos) da mesma clase, sorteados con aleatoriedade segura do navegador. Se as contas non cadran, algunhas persoas xogan en dous equipos (marcadas con ★).
+* **Equipos de 4** (2 nenas + 2 nenos) da mesma clase, sorteados con aleatoriedade segura do navegador. Se sobra alumnado, os que sobran van como **5º xogador** noutros equipos (quen descansa rota en cada partido); nunca se repite ninguén. Se unha clase está moi desequilibrada (moitas máis nenas que nenos, ou ao revés), a páxina avisa e deixa elixir o número de equipos.
 * **Listas por clase:** cárgase unha vez o CSV/TXT (ou pegando a lista) e a páxina detecta nenas e nenos polo nome; hai que revisar os nomes dubidosos. O día do sorteo só se elixe a clase e se preme «Sortear».
 * **Revelado equipo por equipo**, en pantalla completa para proxectar. Ao final pódese poñer o nome que escolla cada equipo.
 * **Gardar equipos**, copiar, imprimir e descargar un CSV con todos os equipos.

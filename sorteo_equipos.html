@@ -102,7 +102,7 @@ button.big{font-size:1.15rem;padding:14px 26px}
 
 <div class="wrap">
   <h1>🎲 Sorteo de equipos</h1>
-  <p class="sub">Equipos de 4 (2 nenas + 2 nenos). As listas e os equipos con nomes gárdanse <b>só neste navegador</b>. Ao torneo só se envían os nomes dos equipos, nunca os do alumnado.</p>
+  <p class="sub">Equipos de 4 (2 nenas + 2 nenos); se sobra alumnado, algúns equipos serán de 5. As listas e os equipos con nomes gárdanse <b>só neste navegador</b>. Ao torneo só se envían os nomes dos equipos, nunca os do alumnado.</p>
   <div id="storewarn"></div>
 
   <div class="card">
@@ -216,42 +216,46 @@ button.big{font-size:1.15rem;padding:14px 26px}
   function parseList(txt, sex){
     return txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map((name, i) => ({ id: sex + i, name: name, sex: sex }));
   }
-  function autoTeams(g, b){ return Math.max(Math.ceil(g / 2), Math.ceil(b / 2)); }
-
-  function fillSlots(list, n){
-    const base = shuffle(list.slice());
-    const slots = base.slice(0, n);
-    const leftOut = base.slice(n);
-    while (slots.length < n) {
-      const pool = shuffle(list.slice());
-      for (const p of pool) { if (slots.length >= n) break; slots.push(p); }
-    }
-    return { slots: slots, leftOut: leftOut };
+  /* Reparto: equipos de 4; os alumnos que sobran van como 5º xogador (nunca se repite ninguén). */
+  function planSizes(g, b, T){
+    const N = g + b, base = Math.floor(N / T), r = N % T;
+    const sizes = []; for (let i = 0; i < T; i++) sizes.push(base + (i < r ? 1 : 0));
+    const ideal = sizes.map(sz => sz * g / N);
+    const gi = ideal.map(Math.floor);
+    let rem = g - gi.reduce((x, y) => x + y, 0);
+    const order = ideal.map((v, i) => ({ i: i, f: v - Math.floor(v) })).sort((x, y) => y.f - x.f);
+    for (let k = 0; k < rem; k++) gi[order[k % order.length].i]++;
+    return sizes.map((sz, i) => ({ size: sz, g: gi[i], b: sz - gi[i] }));
   }
-
+  function defaultTeams(g, b){
+    const N = g + b;
+    if (N < 4) return 1;
+    for (let T = Math.floor(N / 4); T >= Math.max(1, Math.ceil(N / 5)); T--) {
+      if (planSizes(g, b, T).every(x => x.g >= 2 && x.b >= 2)) return T;
+    }
+    return Math.max(1, Math.floor(N / 4));
+  }
+  function planInfo(g, b, T){
+    const p = planSizes(g, b, T), cnt = {};
+    p.forEach(x => { cnt[x.size] = (cnt[x.size] || 0) + 1; });
+    const parts = Object.keys(cnt).map(Number).sort((x, y) => x - y).map(k => cnt[k] + ' de ' + k);
+    return { text: T + ' equipos (' + parts.join(', ') + ' xogadores)', bad: p.filter(x => x.g < 2 || x.b < 2).length, odd: p.filter(x => x.size < 4 || x.size > 5).length };
+  }
   function makeTeams(girls, boys, T){
-    if (girls.length < 2 || boys.length < 2) throw new Error('Fan falta polo menos 2 nenas e 2 nenos.');
-    const G = fillSlots(girls, 2 * T), B = fillSlots(boys, 2 * T);
-    let teams = null;
-    for (let attempt = 0; attempt < 2000 && !teams; attempt++) {
-      const s = shuffle(G.slots.slice()), t = shuffle(B.slots.slice());
-      let ok = true;
-      const res = [];
-      for (let i = 0; i < T; i++) {
-        if (s[2*i].id === s[2*i+1].id || t[2*i].id === t[2*i+1].id) { ok = false; break; }
-        res.push({ members: [s[2*i], s[2*i+1], t[2*i], t[2*i+1]] });
-      }
-      if (ok) teams = res;
-    }
-    if (!teams) throw new Error('Non se puido formar un reparto válido. Proba con outro número de equipos.');
-    const count = {};
-    teams.forEach(tm => tm.members.forEach(m => { count[m.id] = (count[m.id] || 0) + 1; }));
-    const repeated = {};
-    Object.keys(count).forEach(id => { if (count[id] > 1) repeated[id] = count[id]; });
-    teams.forEach(tm => { tm.members = shuffle(tm.members.slice()); });
-    return { teams: teams, repeated: repeated, leftOut: G.leftOut.concat(B.leftOut) };
+    const g = girls.length, b = boys.length, N = g + b;
+    if (g < 1 || b < 1 || N < 4) throw new Error('Fai falta polo menos 4 alumnos en total, con nenas e nenos.');
+    T = Math.max(1, Math.min(T, Math.floor(N / 2)));
+    const plan = shuffle(planSizes(g, b, T));
+    const G = shuffle(girls.slice()), B = shuffle(boys.slice());
+    let gi = 0, bi = 0;
+    const teams = plan.map(p => {
+      const m = G.slice(gi, gi + p.g).concat(B.slice(bi, bi + p.b));
+      gi += p.g; bi += p.b;
+      return { members: shuffle(m) };
+    });
+    return { teams: teams, repeated: {}, leftOut: [] };
   }
-  window.Sorteo = { makeTeams: makeTeams, parseList: parseList, autoTeams: autoTeams, randInt: randInt };
+  window.Sorteo = { makeTeams: makeTeams, parseList: parseList, defaultTeams: defaultTeams, planSizes: planSizes, randInt: randInt };
 
   /* ---------- Carga de lista e detección de sexo polo nome ---------- */
   const F_NAMES = ('maria lucia paula sofia martina julia valeria daniela alba carmen claudia noa noelia sara carla emma vega ines irene laura ana andrea adriana aitana alejandra alicia amelia aroa ainhoa nerea olivia lara leire lola mia miriam naia natalia nora uxia iria xiana antia sabela carme ledicia maite marta mar nuria anxela anxelica rosalia rebeca raquel silvia sonia patricia pilar rocio rosa vera victoria violeta yaiza yolanda zoe abril ada africa aina alma amaia amparo angela angelica antonia ariadna arantxa aurora barbara beatriz belen berta blanca candela cristina celia clara cloe chloe diana elena elisa elsa eva estela estrella fatima gabriela gala gema gloria helena iciar isabel itziar jana jimena joana judith kiara laia leyre lidia liliana lorena luna luz macarena manuela margarita marina mariana marisa mayra melania mercedes michelle monica montserrat nadia naiara nicole paloma rita roberta romina ruth salma samara sandra selena sheila shaila thais tamara tatiana teresa triana valentina vanesa vanessa veronica virginia wendy xenia xoana zaira aya kenza aicha maya mara mariam lia lea livia luana maia malena mireia nahia nayara nayra noemi dolores soledad paz rosario concepcion consuelo encarnacion esther ester lourdes inma marga mercedes araceli aranzazu auxiliadora begona catalina cecilia charo chus dafne dara delia denise eider elena emilia erika fabiola flor francisca gisela graciela greta guadalupe hanna hannah jessica jenifer jennifer jennyfer joselyn julieta karen karina karla katia kimberly laura leticia lilian lina lisa lorea lucila malak malika marlene martha matilde mayte melissa mia milagros mina minerva nahir naomi nieves nina nuria olalla olaia oriana oihana ona paola penelope pia priscila regina renata rosalinda rubi sabrina salome samira sarai saray scarlett serena silvana simona sira sol sonsoles soraya susana tania tessa thalia ursula uxue vega vicenta vilma yara yasmin yessica yuna zaida zulema aleixandra aldara alexia amanda amy anaelle andrea angeles ania anna anne antia aran ariana arlet arlette aurea bianca brenda brianna camila camille carlota carolina cassandra catarina charlotte chiara coral dalia dania desiree eleonora elia elina eloisa emily emma enma erea esmeralda eugenia evelyn fiona frida gaia gemma giulia giada gladys haizea hera ilaria iratxe iris isa isabela ivana jara jasmin jazmin joaquina jordana josefa josefina juana kaira kaya keila laila laura leia lena leonor lesly lucy lyra madalena magdalena maitane maria marta mei merche mia mirian monserrat nagore naroa nayeli neus nika noor ofelia olimpia oria pandora pastora pepa perla petra rafaela rebeca renata reyes rosana roxana saida sagrario salua sanaa saphira shirley sonia sunna tabata tiziana valery vanesa verona vivian wanda xiomara yaiza yanira yasmina yolanda zahra zaira zenia').split(/\s+/);
@@ -365,7 +369,7 @@ button.big{font-size:1.15rem;padding:14px 26px}
   function currentT(){
     const n = parseInt($('nteams').value, 10);
     const k = classCounts(cur); if (!k) return 0;
-    return n ? Math.max(1, Math.min(40, n)) : autoTeams(k.g, k.b);
+    return n ? Math.max(1, Math.min(40, n)) : defaultTeams(k.g, k.b);
   }
   function renderStatus(){
     const el = $('cls-status');
@@ -374,11 +378,11 @@ button.big{font-size:1.15rem;padding:14px 26px}
     if (!cur) { el.textContent = 'Elixe unha clase.'; return; }
     const k = classCounts(cur);
     if (!k) { el.className = 'info warn'; el.textContent = label(cur) + ': aínda non hai lista. Preme «Lista da clase» para cargala.'; return; }
-    if (k.g < 2 || k.b < 2) { el.className = 'info err'; el.textContent = label(cur) + ': ' + k.g + ' nenas · ' + k.b + ' nenos. Fan falta polo menos 2 de cada.'; return; }
-    const T = currentT(), repG = Math.max(0, 2 * T - k.g), repB = Math.max(0, 2 * T - k.b), outG = Math.max(0, k.g - 2 * T), outB = Math.max(0, k.b - 2 * T);
-    let msg = label(cur) + ': ' + k.g + ' nenas · ' + k.b + ' nenos → ' + T + ' equipos.';
-    if (repG || repB) msg += ' Repetirán: ' + repG + ' nena(s) e ' + repB + ' neno(s).';
-    if (outG || outB) { el.className = 'info warn'; msg += ' ⚠️ Quedarían sen equipo ' + outG + ' nena(s) e ' + outB + ' neno(s): aumenta o nº de equipos.'; }
+    if (k.g < 1 || k.b < 1 || k.g + k.b < 4) { el.className = 'info err'; el.textContent = label(cur) + ': ' + k.g + ' nenas · ' + k.b + ' nenos. Fai falta polo menos 4 alumnos, con nenas e nenos.'; return; }
+    const T = currentT(), pi = planInfo(k.g, k.b, T);
+    let msg = label(cur) + ': ' + k.g + ' nenas · ' + k.b + ' nenos → ' + pi.text + '.';
+    if (pi.bad) { el.className = 'info warn'; msg += ' ⚠️ ' + pi.bad + ' equipo(s) non poderán ter 2 nenas e 2 nenos (non cadran as contas). Proba con outro nº de equipos ou acepta o reparto.'; }
+    if (pi.odd) { el.className = 'info warn'; msg += ' ⚠️ Hai equipos de menos de 4 ou de máis de 5 xogadores.'; }
     if (DB.teams[cur]) msg += ' (Xa hai equipos gardados desta clase.)';
     el.textContent = msg;
   }
@@ -481,7 +485,7 @@ button.big{font-size:1.15rem;padding:14px 26px}
     const L = DB.lists[cid];
     const girls = L.students.filter(s => s.sex === 'g').map((s, i) => ({ id: 'g' + i, name: s.name, sex: 'g' }));
     const boys = L.students.filter(s => s.sex === 'b').map((s, i) => ({ id: 'b' + i, name: s.name, sex: 'b' }));
-    if (girls.length < 2 || boys.length < 2) { toast('Fan falta polo menos 2 nenas e 2 nenos.', true); return false; }
+    if (girls.length < 1 || boys.length < 1 || girls.length + boys.length < 4) { toast('Fai falta polo menos 4 alumnos, con nenas e nenos.', true); return false; }
     try { S.res = makeTeams(girls, boys, T); } catch (e) { toast(e.message, true); return false; }
     S.T = T; S.idx = -1; S.cid = cid; S.names = []; S.saved = false;
     S.all = girls.concat(boys).map(p => p.name);
@@ -505,19 +509,23 @@ button.big{font-size:1.15rem;padding:14px 26px}
     $('st-title').textContent = label(S.cid) + ' · ' + (i >= 0 && i < T ? 'Equipo ' + (i + 1) + ' de ' + T : 'Sorteo de equipos');
     $('st-dots').innerHTML = Array.from({ length: T }, (_, k) => '<i class="' + (k < i ? 'done' : k === i ? 'cur' : '') + '"></i>').join('');
   }
+  function sizeText(){
+    const cnt = {}; S.res.teams.forEach(t => { cnt[t.members.length] = (cnt[t.members.length] || 0) + 1; });
+    return S.res.teams.length + ' equipos · ' + Object.keys(cnt).map(Number).sort((x, y) => x - y).map(k => cnt[k] + ' de ' + k + ' xogadores').join(' · ');
+  }
   function render(){
     clearTimers(); S.spinning = false; setTitle();
     const T = S.T, i = S.idx;
     $('st-btns').innerHTML = '';
     if (i < 0) {
-      $('st-main').innerHTML = '<div class="intro"><div class="em">🎲</div><h2>' + label(S.cid) + ' · sorteo listo</h2><p>' + T + ' equipos de 4 · 2 nenas + 2 nenos</p></div>';
+      $('st-main').innerHTML = '<div class="intro"><div class="em">🎲</div><h2>' + label(S.cid) + ' · sorteo listo</h2><p>' + sizeText() + '</p></div>';
       addBtn('Comezar ▶', 'big', next);
     } else if (i < T) showTeam(i, true);
     else showSummary();
   }
   function showTeam(i, animate){
     const tm = S.res.teams[i];
-    $('st-main').innerHTML = '<div class="team-card"><h2>' + esc(tname(i)) + '</h2>' +
+    $('st-main').innerHTML = '<div class="team-card"><h2>' + esc(tname(i)) + (tm.members.length > 4 ? ' <small style="font-size:.45em;letter-spacing:.02em;color:#fde68a">· 5 xogadores</small>' : '') + '</h2>' +
       tm.members.map((m, k) => '<div class="slot' + (animate ? ' spin' : ' locked') + '" id="slot' + k + '">' + dotFor(m) +
         '<span class="nm">' + (animate ? '…' : esc(m.name)) + '</span>' +
         (!animate && S.res.repeated[m.id] ? '<span class="rep">★ tamén noutro equipo</span>' : '') + '</div>').join('') + '</div>';
@@ -538,23 +546,24 @@ button.big{font-size:1.15rem;padding:14px 26px}
   }
   function startSpin(i, nb, nextLabel){
     S.spinning = true;
+    const n = S.res.teams[i].members.length;
     const iv = setInterval(function(){
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < n; k++) {
         const el = $('slot' + k);
         if (el && el.classList.contains('spin')) el.querySelector('.nm').textContent = S.all[randInt(S.all.length)];
       }
     }, 70);
     S.timers.push(iv);
-    for (let k = 0; k < 4; k++) {
+    for (let k = 0; k < n; k++) {
       S.timers.push(setTimeout(function(){
         lockSlot(i, k);
-        if (k === 3) { clearInterval(iv); S.spinning = false; nb.textContent = nextLabel; }
+        if (k === n - 1) { clearInterval(iv); S.spinning = false; nb.textContent = nextLabel; }
       }, 1100 + k * 750));
     }
   }
   function finishSpin(i){
     clearTimers(); S.spinning = false;
-    for (let k = 0; k < 4; k++) lockSlot(i, k);
+    for (let k = 0; k < S.res.teams[i].members.length; k++) lockSlot(i, k);
     const last = $('st-btns').lastElementChild;
     if (last) last.textContent = i === S.T - 1 ? 'Ver todos os equipos ▶' : 'Seguinte equipo ▶';
   }
@@ -563,10 +572,9 @@ button.big{font-size:1.15rem;padding:14px 26px}
     $('st-main').innerHTML = '<div class="sum"><h2>🏑 ' + label(S.cid) + ' · Todos os equipos</h2>' +
       '<div class="legend" style="margin:-4px 0 10px">Podes escribir o nome que escolla cada equipo.</div><div class="grid">' +
       teams.map((tm, i) => '<div class="tc"><input class="tn" data-i="' + i + '" type="text" maxlength="40" placeholder="Equipo ' + (i + 1) + '" value="' + esc(S.names[i] || '') + '">' +
-        tm.members.map(m => '<div>' + dotFor(m) + esc(m.name) + (rep[m.id] ? ' <span class="star">★</span>' : '') + '</div>').join('') + '</div>').join('') +
+        tm.members.map(m => '<div>' + dotFor(m) + esc(m.name) + (rep[m.id] ? ' <span class="star">★</span>' : '') + '</div>').join('') + (tm.members.length > 4 ? '<div style="opacity:.7;font-size:.85rem">5 xogadores</div>' : '') + '</div>').join('') +
       '</div>' +
-      (Object.keys(rep).length ? '<div class="legend"><span class="star">★</span> xoga en dous equipos</div>' : '') +
-      (S.res.leftOut.length ? '<div class="legend">⚠️ Sen equipo: ' + S.res.leftOut.map(p => esc(p.name)).join(', ') + '</div>' : '') + '</div>';
+      (teams.some(t => t.members.length > 4) ? '<div class="legend">Nos equipos de 5, quen descansa rota en cada partido.</div>' : '') + '</div>';
     document.querySelectorAll('.tn').forEach(inp => inp.addEventListener('input', function(){ S.names[+this.dataset.i] = this.value; S.saved = false; }));
     $('st-btns').innerHTML = '';
     addBtn('◀ Anterior', 'gray', prev);
@@ -638,7 +646,9 @@ button.big{font-size:1.15rem;padding:14px 26px}
   }
   function buildCSV(){
     const q = v => '"' + String(v).replace(/"/g, '""') + '"';
-    const rows = [['Clase', 'Equipo', 'Nome do equipo', 'Xogador 1', 'Xogador 2', 'Xogador 3', 'Xogador 4'].map(q).join(';')];
+    let mx = 4; CLASSES.forEach(c => { const e = DB.teams[c]; if (e) e.teams.forEach(t => { mx = Math.max(mx, t.members.length); }); });
+    const head = ['Clase', 'Equipo', 'Nome do equipo']; for (let k = 1; k <= mx; k++) head.push('Xogador ' + k);
+    const rows = [head.map(q).join(';')];
     CLASSES.forEach(c => { const e = DB.teams[c]; if (!e) return;
       e.teams.forEach((t, i) => rows.push([label(c), i + 1, t.name || '', ...t.members.map(m => m.n + (m.r ? ' ★' : ''))].map(q).join(';'))); });
     return '﻿' + rows.join('\r\n');
@@ -733,7 +743,7 @@ button.big{font-size:1.15rem;padding:14px 26px}
     if (!cur) return;
     if (!DB.lists[cur]) { openEditor(); return; }
     const k = classCounts(cur);
-    if (k.g < 2 || k.b < 2) { toast('Fan falta polo menos 2 nenas e 2 nenos.', true); return; }
+    if (k.g < 1 || k.b < 1 || k.g + k.b < 4) { toast('Fai falta polo menos 4 alumnos, con nenas e nenos.', true); return; }
     if (DB.teams[cur] && !confirm('Xa hai equipos gardados de ' + label(cur) + '. Podes sortear de novo, pero só se substitúen cando gardes.\n¿Sortear?')) return;
     if (startDraw(cur, currentT())) openStage();
   });
