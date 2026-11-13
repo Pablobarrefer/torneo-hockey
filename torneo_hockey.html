@@ -440,6 +440,20 @@
   </div>
 </div>
 <div id="banner" class="banner"></div>
+<div id="login-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100001;display:none;align-items:center;justify-content:center;padding:16px">
+  <form id="login-form" style="background:#fff;color:#0f172a;border-radius:12px;padding:18px;width:min(380px,100%);box-sizing:border-box">
+    <h3 style="margin:0 0 10px;color:var(--accent)">🔒 Acceso profesor</h3>
+    <label for="lg-email" style="display:block;font-weight:600;margin:8px 0 4px">Email</label>
+    <input type="email" id="lg-email" autocomplete="username" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box">
+    <label for="lg-pass" style="display:block;font-weight:600;margin:8px 0 4px">Contrasinal</label>
+    <input type="password" id="lg-pass" autocomplete="current-password" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box">
+    <div id="lg-err" style="display:none;margin-top:8px;padding:8px;border-radius:8px;background:#fde8e8;color:#8a1c1c;font-size:.9rem"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button type="button" id="lg-cancel" class="gray">Cancelar</button>
+      <button type="submit" id="lg-ok">Entrar</button>
+    </div>
+  </form>
+</div>
 <button id="btn-exit-projector" class="projector-btn" style="display:none;position:fixed;top:10px;right:10px;z-index:1000">⬅️ Saír do Modo Proxector</button>
 
 <!-- FIREBASE SDKs -->
@@ -525,11 +539,15 @@ document.addEventListener('DOMContentLoaded', function() {
       
       this.isEditing = false;
       this.saveTimer = null;
+      // Non gardar nada ata recibir os datos da nube: un gardado antes
+      // sobrescribiría o torneo enteiro cun estado baleiro.
+      this.loaded = false;
 
       db.ref('torneo').on('value', (snapshot) => {
         if (this.isEditing) {
           return;
         }
+        this.loaded = true;
         const data = snapshot.val();
         if (data) {
           this.state = data;
@@ -548,6 +566,10 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     saveState: function() {
+      if (!this.loaded) {
+        this.showBanner('⏳ Aínda se están a cargar os datos. Agarda un momento e volve tentalo.');
+        return;
+      }
       if (this.user) {
         db.ref('torneo').set(this.state)
           .then(() => console.log("☁️ Gardado en Firebase"))
@@ -608,15 +630,32 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     },
 
+    // Formulario propio en vez de prompt(): prompt() amosa o contrasinal en claro
+    // (e no proxector, se está conectado).
     login: function() {
-      const email = prompt("✉️ Email do profesor:");
-      if(!email) return;
-      const pass = prompt("🔑 Contrasinal:");
-      if(!pass) return;
+      const modal = document.getElementById('login-modal');
+      const err = document.getElementById('lg-err');
+      err.style.display = 'none';
+      modal.style.display = 'flex';
+      document.getElementById('lg-email').focus();
+    },
 
+    closeLogin: function() {
+      document.getElementById('login-modal').style.display = 'none';
+      document.getElementById('lg-pass').value = '';
+    },
+
+    submitLogin: function() {
+      const email = document.getElementById('lg-email').value.trim();
+      const pass = document.getElementById('lg-pass').value;
+      const err = document.getElementById('lg-err');
+      const btn = document.getElementById('lg-ok');
+      if (!email || !pass) return;
+      btn.disabled = true;
       auth.signInWithEmailAndPassword(email, pass)
-        .then(() => this.showBanner("✅ Benvido/a, Profe!"))
-        .catch(e => alert("Erro de acceso: " + e.message));
+        .then(() => { this.closeLogin(); this.showBanner("✅ Benvido/a, Profe!"); })
+        .catch(e => { err.textContent = "Erro de acceso: " + e.message; err.style.display = 'block'; })
+        .then(() => { btn.disabled = false; });
     },
 
     logout: function() {
@@ -751,8 +790,8 @@ document.addEventListener('DOMContentLoaded', function() {
           const item = document.createElement('div');
           item.className = 'gallery-item';
           item.innerHTML = `
-            <img ${this.imgAttrs(team.photo)} alt="${team.name}" onerror="this.parentElement.style.display='none'">
-            <div class="gallery-item-name">${this.getTeamShield(team)} ${team.name}</div>
+            <img ${this.imgAttrs(team.photo)} alt="${this.esc(team.name)}" onerror="this.parentElement.style.display='none'">
+            <div class="gallery-item-name">${this.getTeamShield(team)} ${this.esc(team.name)}</div>
             <div style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:4px">Grupo ${team.group}</div>
           `;
           galleryArea.appendChild(item);
@@ -829,10 +868,10 @@ document.addEventListener('DOMContentLoaded', function() {
              onerror="this.style.display='none'" 
              style="display:${shieldUrl ? 'block' : 'none'}">
         <div class="inputs-wrapper">
-          <input type="text" class="name-input" value="${name}" placeholder="${placeholder}">
+          <input type="text" class="name-input" value="${this.esc(name)}" placeholder="${placeholder}">
           <div class="img-btns"><button type="button" class="gray btn-cam-shield">🛡️ Escudo (cámara)</button><button type="button" class="gray btn-cam-photo">📷 Foto equipo</button></div>
-          <input type="url" class="shield-input" value="${shieldUrl || ''}" placeholder="URL do Escudo">
-          <input type="url" class="photo-input" value="${photoUrl || ''}" placeholder="📷 URL da Foto do Equipo">
+          <input type="url" class="shield-input" value="${this.esc(shieldUrl || '')}" placeholder="URL do Escudo">
+          <input type="url" class="photo-input" value="${this.esc(photoUrl || '')}" placeholder="📷 URL da Foto do Equipo">
         </div>
       `; 
       
@@ -856,7 +895,11 @@ document.addEventListener('DOMContentLoaded', function() {
       list.appendChild(entry); 
     },
     
-    getTeamShield: function(team) { 
+    esc: function(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    },
+
+    getTeamShield: function(team) {
       if (!team) return ''; 
       return `<img ${this.imgAttrs(team.shield)} class="shield-image" alt="escudo" onerror="this.style.display='none'">`;
     },
@@ -875,9 +918,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (v && v.indexOf('fb:') === 0) {
         const k = v.slice(3);
         this.fetchImg(k);
-        return `src="${this.imgCache[k] || this.PLACEHOLDER}" data-fb="${k}"`;
+        return `src="${this.esc(this.imgCache[k] || this.PLACEHOLDER)}" data-fb="${this.esc(k)}"`;
       }
-      return `src="${v || this.PLACEHOLDER}"`;
+      return `src="${this.esc(v || this.PLACEHOLDER)}"`;
     },
 
     fetchImg: function(k) {
@@ -1150,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', function() {
           if (round.restingTeamIdx !== null && teams[round.restingTeamIdx]) { 
             const restingDiv = document.createElement('div'); 
             restingDiv.className = 'resting-team'; 
-            restingDiv.innerHTML = `🧘 Descansa: ${this.getTeamShield(teams[round.restingTeamIdx])} ${teams[round.restingTeamIdx].name}`; 
+            restingDiv.innerHTML = `🧘 Descansa: ${this.getTeamShield(teams[round.restingTeamIdx])} ${this.esc(teams[round.restingTeamIdx].name)}`; 
             panel.appendChild(restingDiv); 
           } 
           
@@ -1161,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!teamA || !teamB) return; 
             
             row.innerHTML = `
-              <div class="teams">${this.getTeamShield(teamA)} ${teamA.name} vs ${this.getTeamShield(teamB)} ${teamB.name}</div>
+              <div class="teams">${this.getTeamShield(teamA)} ${this.esc(teamA.name)} vs ${this.getTeamShield(teamB)} ${this.esc(teamB.name)}</div>
               <div style="display:flex;gap:6px;align-items:center;">
                 <input type="number" min="0" value="${m.scoreA ?? ''}" 
                        data-group-id="${id}" data-match-id="${m.id}" data-score-type="A" 
@@ -1207,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const tbody = document.createElement('tbody');
       stats.forEach((s, i) => { 
         const tr = document.createElement('tr'); 
-        tr.innerHTML = `<td class="num"><b>${i + 1}</b></td><td class="team-col">${this.getTeamShield(s)} ${s.name}</td><td class="num">${s.PTS}</td><td class="num">${s.P}</td><td class="num">${s.W}</td><td class="num">${s.D}</td><td class="num">${s.L}</td><td class="num">${s.GF}</td><td class="num">${s.GA}</td><td class="num">${s.GD}</td>`; 
+        tr.innerHTML = `<td class="num"><b>${i + 1}</b></td><td class="team-col">${this.getTeamShield(s)} ${this.esc(s.name)}</td><td class="num">${s.PTS}</td><td class="num">${s.P}</td><td class="num">${s.W}</td><td class="num">${s.D}</td><td class="num">${s.L}</td><td class="num">${s.GF}</td><td class="num">${s.GA}</td><td class="num">${s.GD}</td>`; 
         tbody.appendChild(tr); 
       });
       table.appendChild(tbody); 
@@ -1246,25 +1289,25 @@ document.addEventListener('DOMContentLoaded', function() {
           <span class="award-medal">⚽</span>
           <div style="flex:1">
             <strong>Equipo Máis Goleador</strong>
-            <div style="font-size:0.85rem;color:var(--muted)">${this.getTeamShield(topScorer)} ${topScorer.name} - ${topScorer.GF} goles</div>
+            <div style="font-size:0.85rem;color:var(--muted)">${this.getTeamShield(topScorer)} ${this.esc(topScorer.name)} - ${topScorer.GF} goles</div>
           </div>
-          ${topScorer.photo ? `<img src="${topScorer.photo}" class="award-photo" alt="${topScorer.name}" onerror="this.style.display='none'">` : ''}
+          ${topScorer.photo ? `<img src="${this.esc(topScorer.photo)}" class="award-photo" alt="${this.esc(topScorer.name)}" onerror="this.style.display='none'">` : ''}
         </div>
         <div class="award-item">
           <span class="award-medal">🛡️</span>
           <div style="flex:1">
             <strong>Portería Menos Batida</strong>
-            <div style="font-size:0.85rem;color:var(--muted)">${this.getTeamShield(bestDefense)} ${bestDefense.name} - ${bestDefense.GA} goles recibidos</div>
+            <div style="font-size:0.85rem;color:var(--muted)">${this.getTeamShield(bestDefense)} ${this.esc(bestDefense.name)} - ${bestDefense.GA} goles recibidos</div>
           </div>
-          ${bestDefense.photo ? `<img src="${bestDefense.photo}" class="award-photo" alt="${bestDefense.name}" onerror="this.style.display='none'">` : ''}
+          ${bestDefense.photo ? `<img src="${this.esc(bestDefense.photo)}" class="award-photo" alt="${this.esc(bestDefense.name)}" onerror="this.style.display='none'">` : ''}
         </div>
         <div class="award-item">
           <span class="award-medal">🤝</span>
           <div style="flex:1">
             <strong>Premio Fair Play</strong>
-            <div style="font-size:0.85rem;color:var(--muted)">${this.getTeamShield(fairPlayWinner)} ${fairPlayWinner.name} - ${fairPlayWinner.fpPoints} partidos con fair play</div>
+            <div style="font-size:0.85rem;color:var(--muted)">${this.getTeamShield(fairPlayWinner)} ${this.esc(fairPlayWinner.name)} - ${fairPlayWinner.fpPoints} partidos con fair play</div>
           </div>
-          ${fairPlayWinner.photo ? `<img src="${fairPlayWinner.photo}" class="award-photo" alt="${fairPlayWinner.name}" onerror="this.style.display='none'">` : ''}
+          ${fairPlayWinner.photo ? `<img src="${this.esc(fairPlayWinner.photo)}" class="award-photo" alt="${this.esc(fairPlayWinner.name)}" onerror="this.style.display='none'">` : ''}
         </div>
       `;
       container.appendChild(awardsSection);
@@ -1360,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ['2ciclo', '3ciclo'].forEach(cycle => { 
         const b = this.state.playoffs && this.state.playoffs[cycle]; 
         if (b && b.cycleFinal && b.cycleFinal.winner) { 
-          pod.innerHTML += `<div style="margin-bottom:6px"><strong>Campión ${cycle === '2ciclo' ? '2º Ciclo' : '3º Ciclo'}</strong>: 🎖️ ${this.getTeamShield(b.cycleFinal.winner)} ${b.cycleFinal.winner.name}</div>`; 
+          pod.innerHTML += `<div style="margin-bottom:6px"><strong>Campión ${cycle === '2ciclo' ? '2º Ciclo' : '3º Ciclo'}</strong>: 🎖️ ${this.getTeamShield(b.cycleFinal.winner)} ${this.esc(b.cycleFinal.winner.name)}</div>`; 
         } 
       }); 
     },
@@ -1422,9 +1465,11 @@ document.addEventListener('DOMContentLoaded', function() {
     generateSchedule: function(id) { 
       const g = this.state.groups[id]; 
       if (!g || !g.teams || g.teams.length < 2) { 
-        this.showBanner('Engade polo menos 2 equipos.'); 
-        return; 
-      } 
+        this.showBanner('Engade polo menos 2 equipos.');
+        return;
+      }
+      const hasResults = (g.rounds || []).some(r => (r.matches || []).some(m => m.scoreA != null || m.scoreB != null));
+      if (hasResults && !confirm(`O grupo ${id} xa ten resultados. Xerar as xornadas de novo borrará todos os resultados deste grupo. Continuar?`)) return;
       let teamIndices = g.teams.map((_, i) => i); 
       const rounds = []; 
       const REST_KEY = -1; 
@@ -1463,17 +1508,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     handleScoreChange: function(event) { 
       const input = event.target; 
-      const groupId = input.dataset.groupId; 
-      const matchId = input.dataset.matchId; 
-      
+      const groupId = input.dataset.groupId;
+      const matchId = input.dataset.matchId;
+
+      let match = null;
+      for (const round of this.state.groups[groupId].rounds) {
+        match = round.matches.find(m => m.id === matchId);
+        if (match) break;
+      }
+      if (!match) return;
+
       this.isEditing = true;
-      
-      let match = null; 
-      for (const round of this.state.groups[groupId].rounds) { 
-        match = round.matches.find(m => m.id === matchId); 
-        if (match) break; 
-      } 
-      if (!match) return; 
       
       const scoreA_input = document.querySelector(`input[data-match-id="${matchId}"][data-score-type="A"]`); 
       const scoreB_input = document.querySelector(`input[data-match-id="${matchId}"][data-score-type="B"]`); 
@@ -1502,15 +1547,15 @@ document.addEventListener('DOMContentLoaded', function() {
       const groupId = checkbox.dataset.groupId;
       const matchId = checkbox.dataset.matchId;
       const team = checkbox.dataset.fairplayTeam;
-      
-      this.isEditing = true;
-      
+
       let match = null;
-      for (const round of this.state.groups[groupId].rounds) { 
-        match = round.matches.find(m => m.id === matchId); 
-        if (match) break; 
+      for (const round of this.state.groups[groupId].rounds) {
+        match = round.matches.find(m => m.id === matchId);
+        if (match) break;
       }
-      if (!match) return; 
+      if (!match) return;
+
+      this.isEditing = true;
       
       if (team === 'A') { match.fairPlayA = checkbox.checked; } 
       else { match.fairPlayB = checkbox.checked; }
@@ -1569,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isTied = match.scoreA != null && match.scoreB != null && match.scoreA === match.scoreB;
         
         div.innerHTML = `
-          <div style="flex:1"><b>${this.getTeamShield(teamA)} ${teamA.name}</b></div>
+          <div style="flex:1"><b>${this.getTeamShield(teamA)} ${this.esc(teamA.name)}</b></div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
             <div class="score-inputs">
               <input type="number" min="0" style="width:50px;padding:4px;text-align:center;font-weight:bold" 
@@ -1616,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             ` : ''}
           </div>
-          <div style="flex:1;text-align:right"><b>${this.getTeamShield(teamB)} ${teamB.name}</b></div>
+          <div style="flex:1;text-align:right"><b>${this.getTeamShield(teamB)} ${this.esc(teamB.name)}</b></div>
         `; 
         
         if(this.user) {
@@ -1681,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(lvl.winner) {
           const winnerDiv = document.createElement('div');
           winnerDiv.style.cssText = 'background:#e8f5e9;padding:8px;border-radius:6px;margin-top:8px;text-align:center';
-          winnerDiv.innerHTML = `✅ <strong>Gañador ${level}º:</strong> ${this.getTeamShield(lvl.winner)} ${lvl.winner.name}`;
+          winnerDiv.innerHTML = `✅ <strong>Gañador ${level}º:</strong> ${this.getTeamShield(lvl.winner)} ${this.esc(lvl.winner.name)}`;
           cycleContent.appendChild(winnerDiv);
         }
       }); 
@@ -1697,7 +1742,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const championDiv = document.createElement('div');
           championDiv.style.cssText = 'background:linear-gradient(135deg,#ffd700,#ffed4e);padding:12px;border-radius:8px;margin-top:12px;text-align:center;font-size:1.1rem;box-shadow:0 4px 12px rgba(255,215,0,0.3)';
           championDiv.className = 'champion-badge';
-          championDiv.innerHTML = `🥇 <strong>CAMPEÓN ${cycle === '2ciclo' ? '2º' : '3º'} CICLO:</strong> ${this.getTeamShield(bracket.cycleFinal.winner)} <strong>${bracket.cycleFinal.winner.name}</strong>`;
+          championDiv.innerHTML = `🥇 <strong>CAMPEÓN ${cycle === '2ciclo' ? '2º' : '3º'} CICLO:</strong> ${this.getTeamShield(bracket.cycleFinal.winner)} <strong>${this.esc(bracket.cycleFinal.winner.name)}</strong>`;
           cycleContent.appendChild(championDiv);
           
           if (!bracket.cycleFinal.confettiShown) {
@@ -1710,7 +1755,16 @@ document.addEventListener('DOMContentLoaded', function() {
     },
 
     generatePlayoffForCycle: function(cycle) {
-      console.log(`Iniciando xeración para ${cycle}...`);
+      const old = this.state.playoffs && this.state.playoffs[cycle];
+      if (old && old.levels) {
+        const ms = [];
+        Object.values(old.levels).forEach(l => { (l.semis || []).forEach(m => ms.push(m)); if (l.final) ms.push(l.final); });
+        if (old.cycleFinal) ms.push(old.cycleFinal);
+        if (ms.some(m => m && (m.scoreA != null || m.scoreB != null))) {
+          const nome = cycle === '2ciclo' ? '2º ciclo' : '3º ciclo';
+          if (!confirm(`A fase final do ${nome} xa ten resultados. Xerala de novo borrará todos eses resultados. Continuar?`)) return;
+        }
+      }
       const mapping = cycle === '2ciclo' ? {levels:['3','4']} : {levels:['5','6']};
       const bracket = {levels:{}, cycleFinal:null};
       let matchCount = 0;
@@ -1944,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div class="stat-icon">⚽</div>
               <div class="stat-data">
                 <span class="stat-label">Máis Goleador</span>
-                <span class="stat-value">${this.getTeamShield(stats.topScorer)} ${stats.topScorer.name} <small style="color:var(--muted)">(${stats.topScorer.GF} goles)</small></span>
+                <span class="stat-value">${this.getTeamShield(stats.topScorer)} ${this.esc(stats.topScorer.name)} <small style="color:var(--muted)">(${stats.topScorer.GF} goles)</small></span>
               </div>
             </div>
           ` : ''}
@@ -1954,7 +2008,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div class="stat-icon">🛡️</div>
               <div class="stat-data">
                 <span class="stat-label">Menos Batido</span>
-                <span class="stat-value">${this.getTeamShield(stats.bestDefense)} ${stats.bestDefense.name} <small style="color:var(--muted)">(${stats.bestDefense.GA} encaixados)</small></span>
+                <span class="stat-value">${this.getTeamShield(stats.bestDefense)} ${this.esc(stats.bestDefense.name)} <small style="color:var(--muted)">(${stats.bestDefense.GA} encaixados)</small></span>
               </div>
             </div>
           ` : ''}
@@ -1964,7 +2018,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div class="stat-icon">🔥</div>
               <div class="stat-data">
                 <span class="stat-label">Mellor Racha</span>
-                <span class="stat-value">${this.getTeamShield(stats.bestStreak)} ${stats.bestStreak.name} <small style="color:var(--muted)">(${stats.bestStreak.streak} vitorias seguidas)</small></span>
+                <span class="stat-value">${this.getTeamShield(stats.bestStreak)} ${this.esc(stats.bestStreak.name)} <small style="color:var(--muted)">(${stats.bestStreak.streak} vitorias seguidas)</small></span>
               </div>
             </div>
           ` : ''}
@@ -1974,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div class="stat-icon">📈</div>
               <div class="stat-data">
                 <span class="stat-label">Mellor Diferenza</span>
-                <span class="stat-value">${this.getTeamShield(stats.bestGoalDiff)} ${stats.bestGoalDiff.name} <small style="color:var(--muted)">(${stats.bestGoalDiff.GD > 0 ? '+' : ''}${stats.bestGoalDiff.GD})</small></span>
+                <span class="stat-value">${this.getTeamShield(stats.bestGoalDiff)} ${this.esc(stats.bestGoalDiff.name)} <small style="color:var(--muted)">(${stats.bestGoalDiff.GD > 0 ? '+' : ''}${stats.bestGoalDiff.GD})</small></span>
               </div>
             </div>
           ` : ''}
@@ -2156,8 +2210,14 @@ document.addEventListener('DOMContentLoaded', function() {
         this.closeScoreboard();
         return;
       }
+      const changed = match.scoreA !== this.scoreboard.homeScore || match.scoreB !== this.scoreboard.awayScore;
       match.scoreA = this.scoreboard.homeScore;
       match.scoreB = this.scoreboard.awayScore;
+      // Igual que ao escribir o resultado á man: se cambia o marcador dunha
+      // eliminatoria, a prórroga e os penaltis anteriores xa non valen.
+      if (active.type === 'playoff' && changed) {
+        match.extraTimeA = null; match.extraTimeB = null; match.penaltyA = null; match.penaltyB = null;
+      }
 
       if(active.type === 'group') {
         this.saveState();
@@ -2233,8 +2293,11 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(this.config.GROUPS).forEach(groupId => {
         const stats = this.computeStatsForGroup(groupId);
         if (!stats.length) return;
-        csv += `\nGRUPO ${groupId}\nPos,Equipo,Puntos,X,V,E,D,GF,GC,DG\n`;
-        stats.forEach((t, i) => csv += `${i+1},${t.name},${t.PTS},${t.P},${t.W},${t.D},${t.L},${t.GF},${t.GA},${t.GD}\n`);
+        // Separador ";" e nomes entre comiñas: é o que espera Excel/LibreOffice en galego/español
+        // e evita que un nome con coma se parta en dúas columnas (igual que no sorteo).
+        csv += `\nGRUPO ${groupId}\nPos;Equipo;Puntos;X;V;E;D;GF;GC;DG\n`;
+        const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+        stats.forEach((t, i) => csv += [i + 1, q(t.name), t.PTS, t.P, t.W, t.D, t.L, t.GF, t.GA, t.GD].join(';') + '\n');
       });
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -2261,12 +2324,11 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     
     showBanner: function(msg, time = 4000) { 
-      let bannerTimeout; 
-      const b = document.getElementById('banner'); 
-      b.textContent = msg; 
-      b.style.display = 'block'; 
-      if (bannerTimeout) clearTimeout(bannerTimeout); 
-      bannerTimeout = setTimeout(() => { b.style.display = 'none'; }, time); 
+      const b = document.getElementById('banner');
+      b.textContent = msg;
+      b.style.display = 'block';
+      if (this._bannerTimeout) clearTimeout(this._bannerTimeout);
+      this._bannerTimeout = setTimeout(() => { b.style.display = 'none'; }, time);
     },
     
     updateTitleFromYear: function(override) { 
@@ -2293,7 +2355,10 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('subtitle').textContent = `Curso escolar: ${y}`; 
     },
     
-    applyFilter: function(filter) {
+    // persist=true só cando o filtro o cambia o profesor cun clic. Ao debuxar a
+    // páxina (renderAll) non se garda: antes cada actualización recibida
+    // provocaba unha escritura completa do torneo desde cada dispositivo con sesión.
+    applyFilter: function(filter, persist) {
       document.getElementById('cycle-2-container').style.display = (filter === 'all' || filter === 'c2' || filter === '3' || filter === '4') ? 'block' : 'none';
       document.getElementById('cycle-3-container').style.display = (filter === 'all' || filter === 'c3' || filter === '5' || filter === '6') ? 'block' : 'none';
       ['3', '4'].forEach(level => { 
@@ -2308,7 +2373,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const activeBtn = document.getElementById(`btn-filter-${filter}`);
       if(activeBtn) activeBtn.classList.add('active');
       this.state.filter = filter;
-      if(this.user) this.saveState();
+      if(persist && this.user) this.saveState();
     },
     
     bindEvents: function() {
@@ -2353,6 +2418,8 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const btnLogin = document.getElementById('btn-login-google');
       if(btnLogin) btnLogin.addEventListener('click', () => this.login());
+      document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); this.submitLogin(); });
+      document.getElementById('lg-cancel').addEventListener('click', () => this.closeLogin());
 
       const btnLogout = document.getElementById('btn-logout');
       if(btnLogout) btnLogout.addEventListener('click', () => this.logout());
@@ -2414,7 +2481,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const filters = ['all', 'c2', 'c3', '3', '4', '5', '6'];
       filters.forEach(f => {
           const btn = document.getElementById(`btn-filter-${f}`);
-          if(btn) btn.addEventListener('click', () => this.applyFilter(f));
+          if(btn) btn.addEventListener('click', () => this.applyFilter(f, true));
       });
       
       document.addEventListener('click', (event) => {
@@ -2519,8 +2586,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const t = document.getElementById('import-text').value.trim(); 
       if (!t) return alert('Pega o JSON antes de importar.'); 
       try { 
-        const p = JSON.parse(t); 
-        this.state = p; 
+        const p = JSON.parse(t);
+        if (!p || typeof p !== 'object' || typeof p.groups !== 'object') {
+          return alert('Este JSON non parece unha copia de seguridade do torneo (falta "groups").');
+        }
+        if (!confirm('A importación substituirá TODOS os datos actuais do torneo polos da copia. Continuar?')) return;
+        this.state = p;
         this.sanitizeState();
         this.saveState(); 
         this.renderAll(); 

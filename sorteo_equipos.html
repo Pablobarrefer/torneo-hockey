@@ -579,7 +579,12 @@ button.big{font-size:1.15rem;padding:14px 26px}
     $('st-btns').innerHTML = '';
     addBtn('◀ Anterior', 'gray', prev);
     addBtn('💾 Gardar equipos', 'big', saveTeams);
-    addBtn('🏑 Enviar ao torneo', '', function(){ if (!S.saved) saveTeams(); sendToTorneo([S.cid]); });
+    addBtn('🏑 Enviar ao torneo', '', function(){
+      if (!S.saved) saveTeams();
+      // Se non se gardaron (p. ex. dixeron que non a substituír), non enviar os equipos vellos.
+      if (!S.saved) return;
+      sendToTorneo([S.cid]);
+    });
     addBtn('📋 Copiar', 'ghost', copyTeams);
     addBtn('🖨️ Imprimir', 'ghost', function(){ window.print(); });
     addBtn('🔁 Repetir sorteo', 'gray', function(){
