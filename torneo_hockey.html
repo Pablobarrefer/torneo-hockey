@@ -63,6 +63,8 @@
   .resting-team{font-style:italic;color:var(--muted);text-align:center;padding:4px}
   .match{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border-radius:8px;background:linear-gradient(180deg,#f7fbff,#fff);border:1px solid rgba(0,100,180,.04)}
   .match .teams{font-weight:600;flex-grow:1}
+  .match-roles{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.8rem;color:#334;padding:2px 8px 6px;margin-top:-4px}
+  .match-roles span{background:#eef4fb;border-radius:10px;padding:1px 8px}
   .fair-play-checkbox{margin-left:8px;transform:scale(1.2);cursor:pointer}
   
   .award-section{margin-top:16px;padding:12px;background:linear-gradient(135deg,#fff5e6,#ffe6cc);border-radius:8px;border:1px solid #ffc107}
@@ -1172,6 +1174,96 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('img-save').addEventListener('click', () => self.saveImageTool());
     },
     
+    /* Rotación de funcións dos equipos que non xogan (calcúlase ao pintar, non se garda).
+       Os partidos considéranse consecutivos, na orde das xornadas. Criterios: repartir cada
+       función por igual entre equipos e non repetir a mesma función en dous partidos seguidos. */
+    computeMatchRoles: function(teams, rounds) {
+      const out = {};
+      const n = teams.length;
+      if (n < 3) return out;
+      const all = [];
+      rounds.forEach(r => (r.matches || []).forEach(m => { if (teams[m.a] && teams[m.b]) all.push(m); }));
+      const perms = arr => arr.length <= 1 ? [arr] : arr.flatMap((x, i) => perms([...arr.slice(0, i), ...arr.slice(i + 1)]).map(p => [x, ...p]));
+      const info = all.map(m => {
+        const free = [];
+        for (let t = 0; t < n; t++) if (t !== m.a && t !== m.b) free.push(t);
+        const nA = teams[m.a].name, nB = teams[m.b].name;
+        let slots;
+        if (free.length === 1) slots = [{ c: 'mesa', icon: '🕹️', label: 'Mesa + VAR' }];
+        else if (free.length === 2) slots = [{ c: 'obs', icon: '👀', label: 'Observa' }, { c: 'mesa', icon: '🕹️', label: 'Mesa + VAR' }];
+        else if (free.length === 3) slots = [{ c: 'obs', icon: '👀', label: 'Observa a ' + nA }, { c: 'obs', icon: '👀', label: 'Observa a ' + nB }, { c: 'mesa', icon: '🕹️', label: 'Mesa + VAR' }];
+        else slots = [{ c: 'obs', icon: '👀', label: 'Observa a ' + nA }, { c: 'obs', icon: '👀', label: 'Observa a ' + nB }, { c: 'mesa', icon: '🕹️', label: 'Mesa' }, { c: 'var', icon: '📹', label: 'VAR' }];
+        return { m, free, slots, use: free.slice(0, slots.length), options: perms(slots.map((_, k) => k)), pick: 0 };
+      });
+      // Custo global: reparto igualado de cada función (suma de cadrados) + penalización por repetir función seguida.
+      const cost = () => {
+        const cnt = {}, last = {};
+        let c = 0;
+        info.forEach(x => {
+          [x.m.a, x.m.b].forEach(t => { last[t] = 'xoga'; });
+          const p = x.options[x.pick];
+          x.use.forEach((t, k) => {
+            const r = x.slots[p[k]].c, key = t + r;
+            cnt[key] = (cnt[key] || 0) + 1;
+            if (last[t] === r) c += 6;
+            last[t] = r;
+          });
+          x.free.slice(x.slots.length).forEach(t => { last[t] = null; });
+        });
+        Object.values(cnt).forEach(v => { c += v * v; });
+        return c;
+      };
+      // Punto de partida: reparto voraz partido a partido.
+      (() => {
+        const cnt = {}, last = {};
+        info.forEach(x => {
+          [x.m.a, x.m.b].forEach(t => { last[t] = 'xoga'; });
+          let best = 0, bc = Infinity;
+          x.options.forEach((p, o) => {
+            let c = 0;
+            x.use.forEach((t, k) => { const r = x.slots[p[k]].c; c += (cnt[t + r] || 0) * 10 + (last[t] === r ? 12 : 0); });
+            if (c < bc) { bc = c; best = o; }
+          });
+          x.pick = best;
+          x.use.forEach((t, k) => { const r = x.slots[x.options[best][k]].c; cnt[t + r] = (cnt[t + r] || 0) + 1; last[t] = r; });
+          x.free.slice(x.slots.length).forEach(t => { last[t] = null; });
+        });
+      })();
+      let cur = cost(), improved = true, guard = 0;
+      // Con poucos partidos (p. ex. 4 equipos) próbanse todas as combinacións.
+      const total = info.reduce((a, x) => a * x.options.length, 1);
+      if (total <= 20000) {
+        const bestPicks = info.map(x => x.pick);
+        for (let code = 0; code < total; code++) {
+          let r = code;
+          info.forEach(x => { x.pick = r % x.options.length; r = Math.floor(r / x.options.length); });
+          const c = cost();
+          if (c < cur) { cur = c; info.forEach((x, k) => { bestPicks[k] = x.pick; }); }
+        }
+        info.forEach((x, k) => { x.pick = bestPicks[k]; });
+        improved = false;
+      }
+      while (improved && guard++ < 200) {
+        improved = false;
+        info.forEach(x => {
+          for (let o = 0; o < x.options.length; o++) {
+            if (o === x.pick) continue;
+            const old = x.pick; x.pick = o;
+            const c = cost();
+            if (c < cur) { cur = c; improved = true; } else x.pick = old;
+          }
+        });
+      }
+      info.forEach(x => {
+        const p = x.options[x.pick];
+        const res = x.use.map((t, k) => ({ team: t, icon: x.slots[p[k]].icon, label: x.slots[p[k]].label, c: x.slots[p[k]].c, o: p[k] }));
+        res.sort((u, v) => u.o - v.o);
+        x.free.slice(x.slots.length).forEach(t => res.push({ team: t, icon: '🧘', label: 'Descansa' }));
+        out[x.m.id] = res;
+      });
+      return out;
+    },
+
     renderMatchesAndStandings: function(id) { 
       const panel = document.getElementById(`matches-${id}`); 
       const standingsDiv = document.getElementById(`standings-${id}`); 
@@ -1180,6 +1272,7 @@ document.addEventListener('DOMContentLoaded', function() {
       standingsDiv.innerHTML = ''; 
       const g = this.state.groups[id] || { teams: [], rounds: [] }; 
       const teams = g.teams || []; 
+      const roles = this.computeMatchRoles(teams, g.rounds || []); 
       
       if (!g.rounds || g.rounds.length === 0) { 
         panel.innerHTML = '<div style="color:var(--muted);text-align:center;padding:10px 0;">Sen xornadas xeradas.</div>'; 
@@ -1232,6 +1325,13 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             `; 
             panel.appendChild(row); 
+            const rl = roles[m.id]; 
+            if (rl && rl.length) { 
+              const rd = document.createElement('div'); 
+              rd.className = 'match-roles'; 
+              rd.innerHTML = rl.map(x => `<span>${x.icon} ${this.esc(x.label)}: <b>${this.esc(teams[x.team].name)}</b></span>`).join(''); 
+              panel.appendChild(rd); 
+            } 
           }); 
         }); 
       } 

@@ -52,6 +52,17 @@ Nos equipos de cada grupo, o profesor ten dous botóns: **🛡️ Escudo (cámar
 * As imaxes redúcense (foto ≈ 60 KB, escudo ≈ 8 KB) e gárdanse en Firebase na ruta `torneo_img`, aparte dos datos do torneo. O alumnado só descarga as que ve.
 * Tamén se pode seguir usando unha URL de imaxe no lugar da cámara.
 
+## 🔄 Rotación de funcións
+
+Debaixo de cada partido aparece que función lle toca a cada equipo que non xoga. Calcúlase automaticamente ao pintar as xornadas (non hai que volver xerar nada e non se garda en Firebase):
+
+* **3 equipos:** 🕹️ Mesa + VAR.
+* **4 equipos:** 👀 Observa · 🕹️ Mesa + VAR.
+* **5 equipos:** 👀 Observa ao equipo A · 👀 Observa ao equipo B · 🕹️ Mesa + VAR.
+* **6 equipos:** 👀 Observa A · 👀 Observa B · 🕹️ Mesa · 📹 VAR.
+
+Considérase que os partidos se xogan un tras outro, na orde das xornadas. As funcións repártense por igual e ningún equipo repite función en dous partidos seguidos.
+
 ## 🗓️ Curso escolar e edición
 
 Ao escribir o curso (por exemplo `2026-2027`) o título calcula automaticamente o número de edición en cifras romanas, a razón dunha edición por curso: **2018-2019 foi a XV**, polo que **2026-2027 é a XXIII**.
